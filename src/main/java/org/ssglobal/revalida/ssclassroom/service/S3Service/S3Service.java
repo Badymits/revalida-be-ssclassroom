@@ -67,16 +67,17 @@ public class S3Service {
         try {
           URI presignedUrl = URI.create(preSignedUrlString);
 
-            SdkHttpRequest.Builder requestBuilder = SdkHttpRequest.builder()
+            SdkHttpRequest requestBuilder = SdkHttpRequest.builder()
                     .method(SdkHttpMethod.PUT)
-                    .uri(presignedUrl);
-
-            SdkHttpRequest request = requestBuilder.build();
+                    .uri(presignedUrl)
+                    .build();
 
             HttpExecuteRequest executeRequest = HttpExecuteRequest.builder()
-                    .request(request)
-                    .contentStreamProvider(new FileContentStreamProvider(
-                            fileToPutUrl.toPath()))
+                    .request(requestBuilder)
+                    .contentStreamProvider(
+                            new FileContentStreamProvider(
+                                    fileToPutUrl.toPath())
+                    )
                     .build();
 
             try (SdkHttpClient sdkHttpClient = ApacheHttpClient.create()){

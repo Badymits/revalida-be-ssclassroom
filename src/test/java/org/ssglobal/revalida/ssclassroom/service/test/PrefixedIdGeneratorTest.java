@@ -1,8 +1,8 @@
 package org.ssglobal.revalida.ssclassroom.service.test;
 
 import org.junit.jupiter.api.Test;
-import org.ssglobal.revalida.ssclassroom.service.PrefixedId;
-import org.ssglobal.revalida.ssclassroom.service.PrefixedIdGenerator;
+import org.ssglobal.revalida.ssclassroom.service.PrefixedIdService;
+import org.ssglobal.revalida.ssclassroom.service.PrefixedIdGeneratorService;
 
 import java.lang.reflect.Field;
 
@@ -11,16 +11,16 @@ import static org.junit.jupiter.api.Assertions.*;
 class PrefixedIdGeneratorTest {
 
     static class Dummy {
-        @PrefixedId(prefix = "crs_")
+        @PrefixedIdService(prefix = "crs_")
         String id;
     }
 
     @Test
     void generatesPrefixedUlid() throws Exception {
         Field field = Dummy.class.getDeclaredField("id");
-        PrefixedId config = field.getAnnotation(PrefixedId.class);
+        PrefixedIdService config = field.getAnnotation(PrefixedIdService.class);
 
-        PrefixedIdGenerator generator = new PrefixedIdGenerator(config, field, null);
+        PrefixedIdGeneratorService generator = new PrefixedIdGeneratorService(config, field, null);
 
         String id = (String) generator.generate(null, null, null, null);
         System.out.println("Generated ID: " + id);
@@ -33,8 +33,8 @@ class PrefixedIdGeneratorTest {
     @Test
     void generatesDifferentIdsEachTime() throws Exception {
         Field field = Dummy.class.getDeclaredField("id");
-        PrefixedId config = field.getAnnotation(PrefixedId.class);
-        PrefixedIdGenerator generator = new PrefixedIdGenerator(config, field, null);
+        PrefixedIdService config = field.getAnnotation(PrefixedIdService.class);
+        PrefixedIdGeneratorService generator = new PrefixedIdGeneratorService(config, field, null);
 
         String first = (String) generator.generate(null, null, null, null);
         String second = (String) generator.generate(null, null, null, null);

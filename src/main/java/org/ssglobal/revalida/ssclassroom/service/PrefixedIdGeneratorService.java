@@ -10,11 +10,11 @@ import org.hibernate.generator.GeneratorCreationContext;
 import java.lang.reflect.Member;
 import java.util.EnumSet;
 
-public class PrefixedIdGenerator implements BeforeExecutionGenerator {
+public class PrefixedIdGeneratorService implements BeforeExecutionGenerator {
 
     private final String prefix;
 
-    public PrefixedIdGenerator(PrefixedId config, Member annotatedMember,
+    public PrefixedIdGeneratorService(PrefixedIdService config, Member annotatedMember,
                                GeneratorCreationContext context) {
         this.prefix = config.prefix();
     }

@@ -34,4 +34,5 @@ CREATE TABLE assignment (
     status           VARCHAR(10)   NOT NULL DEFAULT 'draft'
                      CHECK (status IN ('draft', 'published'))
 );
+
 CREATE INDEX idx_assignment_cohort ON assignment (cohort_id);

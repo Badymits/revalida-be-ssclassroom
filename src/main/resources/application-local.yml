@@ -1,0 +1,14 @@
+# environment isolation.
+# if this was set in application.yml or application.properties,
+# in here, every environment including production, this would look for LocalStack
+
+# so if we create a local profile (application-local.yml this file)
+# this will only load when app runs with "local" profile
+
+aws:
+  s3:
+    endpoint: http://localhost:4566
+    region: ap-southeast-1
+    access-key: test
+    secret-key: test
+    bucket: my-bucket

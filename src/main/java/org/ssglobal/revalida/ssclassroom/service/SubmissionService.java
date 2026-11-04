@@ -1,12 +1,13 @@
 package org.ssglobal.revalida.ssclassroom.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ssglobal.revalida.ssclassroom.dto.PresignedUrlDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmissionResponseDto;
+import org.ssglobal.revalida.ssclassroom.exceptions.PayloadTooLargeException;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionArtifactModel;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionArtifactRepository;
@@ -16,16 +17,14 @@ import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SubmissionService {
 
-  @Autowired
-  private SubmissionRepository submissionRepository;
+  private final SubmissionRepository submissionRepository;
+  private final SubmissionArtifactRepository submissionArtifactRepository;
+  private final S3Service s3Service;
 
-  @Autowired
-  private SubmissionArtifactRepository submissionArtifactRepository;
-
-  @Autowired
-  private S3Service s3Service;
+  private final int MAX_FILE_SIZE = 52428800;
 
   /*
     Please change to Assignment table later on
@@ -47,9 +46,11 @@ public class SubmissionService {
 
     log.info("Generate Upload URL Service");
 
-    if (submissionRequestDto.getFilename().isEmpty()){
-      log.info("Cannot Save Empty Object");
-      throw new RuntimeException("Empty name detected");
+    if (submissionRequestDto.getSizeBytes() > MAX_FILE_SIZE){
+      log.error("File size is too large! Submitted file size: {} MB",
+              submissionRequestDto.getSizeBytes() / (1024.0 * 1024.0));
+
+      throw new PayloadTooLargeException("File is too large!");
     }
 
     // Retrieve URL

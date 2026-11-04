@@ -3,21 +3,23 @@ package org.ssglobal.revalida.ssclassroom.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
+import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 
 
-@RequestMapping("/api/v1")
-@RestController
+@RestController("/api/v1")
 public class SubmissionController {
 
-  // will move to assignment controller
-//  @GetMapping("/assignments/{assignmentId}/my-submission")
-//  public ResponseEntity<String> submitAssignemnt(
-//          @PathVariable String assignmentId,
-//          @RequestBody SubmissionModel submissionModel
-//  ){
-//
-//    return ResponseEntity.ok("success");
-//  }
+  // controller stubs
+  @GetMapping("/assignments/{assignmentId}/my-submission")
+  public ResponseEntity<String> submitAssignemnt(
+          @PathVariable String assignmentId,
+          @RequestBody SubmissionModel submissionModel
+  ){
+
+    return ResponseEntity.ok("success");
+  }
+
+
 
   @PostMapping("/submissions/{submissionId}/upload-url")
   public ResponseEntity<Boolean> uploadFileWithS3Url(
@@ -45,6 +47,7 @@ public class SubmissionController {
 
     return ResponseEntity.ok("submission id 1 retrieved");
   }
+
 
 }
 

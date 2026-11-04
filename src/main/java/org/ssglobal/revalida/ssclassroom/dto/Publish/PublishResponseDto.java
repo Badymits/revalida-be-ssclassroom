@@ -1,4 +1,4 @@
-package org.ssglobal.revalida.ssclassroom.dto;
+package org.ssglobal.revalida.ssclassroom.dto.Publish;
 
 import org.ssglobal.revalida.ssclassroom.enums.AssignmentStatus;
 

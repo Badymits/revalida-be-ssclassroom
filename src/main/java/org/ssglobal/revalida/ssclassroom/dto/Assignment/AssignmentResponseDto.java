@@ -1,4 +1,4 @@
-package org.ssglobal.revalida.ssclassroom.dto;
+package org.ssglobal.revalida.ssclassroom.dto.Assignment;
 
 import org.ssglobal.revalida.ssclassroom.enums.AssignmentStatus;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;

@@ -6,7 +6,8 @@ import org.ssglobal.revalida.ssclassroom.dto.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 
 
-@RestController("/api/v1")
+@RequestMapping("/api/v1")
+@RestController
 public class SubmissionController {
 
   // controller stubs

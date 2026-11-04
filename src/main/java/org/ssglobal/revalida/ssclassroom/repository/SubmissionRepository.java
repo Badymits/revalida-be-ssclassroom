@@ -11,5 +11,5 @@ import java.util.Optional;
 @Repository
 public interface SubmissionRepository extends JpaRepository<SubmissionModel, String> {
 
-  Optional<List<SubmissionModel>> findByAssignmentId(String assignmentId);
+  Optional<List<SubmissionModel>> findByAssignmentModel_AssignmentId(String assignmentId);
 }

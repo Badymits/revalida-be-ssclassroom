@@ -19,17 +19,20 @@ public class SubmissionModel {
     private SubmissionIdCompositeModel submissionId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private Status status;
 
-    @Column(name = "submitted_at")
+    @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
-//    @OneToOne(
-//            cascade = CascadeType.ALL,
-//            orphanRemoval = true
-//    )
-//    @JoinColumn(name = "artifactId") // owns the foreign key
-//    private SubmissionArtifactModel submissionArtifact;
+    // Setting this is mostly for Java object-graph navigation (fetching titles, etc.)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @MapsId("assignmentId")
+    @JoinColumn(
+            name = "assignmentId",
+            referencedColumnName = "assignmentId"
+    )
+    private AssignmentModel assignmentModel;
+
 
 }

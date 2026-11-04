@@ -6,9 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
+import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionRequestDto;
+import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionResponseDto;
+import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.exceptions.PayloadTooLargeException;
+import org.ssglobal.revalida.ssclassroom.exceptions.StateInvalidException;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionArtifactModel;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionArtifactRepository;
@@ -43,8 +47,9 @@ public class SubmissionService {
     return null;
   }
 
+  @Transactional(readOnly = true)
   public List<SubmissionModel> fetchSubmissionsByAssignmentId(String assignmentId){
-    return submissionRepository.findByAssignmentId(assignmentId)
+    return submissionRepository.findByAssignmentModel_AssignmentId(assignmentId)
             .orElseThrow(() -> new EntityNotFoundException(""));
   }
 
@@ -87,7 +92,21 @@ public class SubmissionService {
     );
   }
 
-  //public TurnInSubmissionRequestDto
+  public TurnInSubmissionResponseDto updateSubmissionTurnIn(
+          TurnInSubmissionRequestDto submissionRequestDto
+  ){
+
+    if (submissionRequestDto.getArtifactId().isEmpty()){
+      throw NotFoundException.of("Submission Artifact",
+              submissionRequestDto.getArtifactId());
+    }
+
+    if (submissionRequestDto.getKind() == null){
+      throw new StateInvalidException("Current state is not allowed!");
+    }
+
+    return null;
+  }
 
   private UploadSubmissionResponseDto toDto(
           String artifactId, String s3Key, PresignedS3UrlDto generatedUrl){

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.ssglobal.revalida.ssclassroom.dto.UploadSubmissionRequestDto;
+import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
 import org.ssglobal.revalida.ssclassroom.exceptions.PayloadTooLargeException;
 import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;

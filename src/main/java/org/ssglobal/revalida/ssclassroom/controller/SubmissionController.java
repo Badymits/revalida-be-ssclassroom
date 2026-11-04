@@ -9,7 +9,7 @@ import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 @RestController("/api/v1")
 public class SubmissionController {
 
-  // controller stubs
+  // controller stubss
   @GetMapping("/assignments/{assignmentId}/my-submission")
   public ResponseEntity<String> submitAssignemnt(
           @PathVariable String assignmentId,

@@ -5,19 +5,26 @@ package org.ssglobal.revalida.ssclassroom.service.S3Service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.ssglobal.revalida.ssclassroom.dto.PresignedUrlDto;
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
 import software.amazon.awssdk.core.internal.sync.FileContentStreamProvider;
 import software.amazon.awssdk.http.*;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.UUID;
 
 
 @Service
@@ -26,6 +33,9 @@ public class S3Service {
 
     private final S3Presigner s3Presigner;
 
+    @Value("${aws.s3.bucket-name}")
+    private String awsBucket;
+
     @Autowired
     public S3Service(S3Presigner s3Presigner){
         this.s3Presigner = s3Presigner;
@@ -33,7 +43,7 @@ public class S3Service {
 
     //  creates time-limited URLs that grant temporary access to
     //  specific S3 objects without requiring AWS credentials, ideal for secure file sharing.
-    public String createPresignedGetUrl(String bucketName, String keyName){
+    public PresignedUrlDto createPresignedGetUrl(String bucketName, String keyName){
 
       log.info("Generating presigned url");
         try {
@@ -51,13 +61,61 @@ public class S3Service {
             PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner
                     .presignGetObject(presignRequest);
 
+            Integer expirationEpoch =
+                    (int) presignedGetObjectRequest.expiration().getEpochSecond();
+
             log.info("Successfully generated URL!");
-            return presignedGetObjectRequest.url().toExternalForm();
+            return new PresignedUrlDto(
+                    presignedGetObjectRequest.url().toExternalForm(),
+                    "GET",
+                    expirationEpoch
+            );
 
         } catch (Exception e) {
           log.error("Exception: {}", e.getMessage());
           throw new RuntimeException(e);
         }
+    }
+
+    public PresignedUrlDto createPresignedPutUrl (
+            String originalFileName, String contentType){
+      log.info("Generating presigned PUT url for key");
+
+      try {
+
+        String s3Key = generatedUniqueKey(originalFileName);
+
+        PutObjectRequest objectRequest = PutObjectRequest.builder()
+                .bucket(awsBucket)
+                .key(s3Key)
+                .contentType(contentType) // Crucial so S3 stores the correct MIME type
+                .build();
+        log.info("Created PutObjectRequest! {}", objectRequest.toString());
+
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest
+                .builder()
+                .signatureDuration(Duration.ofMinutes(10))
+                .putObjectRequest(objectRequest)
+                .build();
+
+        PresignedPutObjectRequest presignedPutObjectRequest =
+                s3Presigner.presignPutObject(presignRequest);
+
+        Integer expirationEpoch =
+                (int) presignedPutObjectRequest.expiration().getEpochSecond();
+
+        log.info("Successfully generated PUT URL for key: {}", s3Key);
+
+        return new PresignedUrlDto(
+            presignedPutObjectRequest.url().toExternalForm(),
+            "PUT",
+            expirationEpoch
+        );
+
+      } catch (Exception e) {
+        log.error("Exception Occurred: {}", e.getMessage());
+        throw new RuntimeException(e);
+      }
     }
 
     public void useSdkHttpClientToPut (
@@ -90,5 +148,11 @@ public class S3Service {
         } catch (IOException ex) {
           log.error("Error Occurred: {}", ex.getMessage());
         }
+    }
+
+    private String generatedUniqueKey(String originalFilename){
+      String uniqueId = UUID.randomUUID().toString();
+
+      return String.format("sub/%s/%s", uniqueId, originalFilename);
     }
 }

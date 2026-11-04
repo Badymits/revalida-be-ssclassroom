@@ -19,6 +19,8 @@ public class SubmissionArtifactModel {
   @Column(name = "submission_id", nullable = false)
   private String submissionId;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "kind", nullable = false)
   private SubmissionKind kind;
 
   @Column(name = "name", nullable = false)
@@ -38,8 +40,8 @@ public class SubmissionArtifactModel {
   @Column(unique = true)
   private String url;
 
-  @OneToOne(mappedBy = "submissionArtifact")
-  private SubmissionModel submissionModel;
+//  @OneToOne(mappedBy = "submissionArtifact")
+//  private SubmissionModel submissionModel;
 
 
 }

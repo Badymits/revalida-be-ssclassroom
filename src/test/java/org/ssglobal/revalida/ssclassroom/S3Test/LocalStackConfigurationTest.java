@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.ssglobal.revalida.ssclassroom.dto.PresignedUrlDto;
 import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -13,6 +14,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 @SpringBootTest
 public class LocalStackConfigurationTest {
@@ -40,12 +42,12 @@ public class LocalStackConfigurationTest {
   @Test
   void testGeneratePresignedUrlWithLocalStack() {
     // Act
-    String url = s3Service.createPresignedGetUrl(testBucket, "sample-file.txt");
+    PresignedUrlDto url = s3Service.createPresignedGetUrl(testBucket, "sample-file.txt");
 
     // Assert
     assertNotNull(url);
-    assertTrue(url.contains(testBucket));
-    assertTrue(url.contains("sample-file.txt"));
+    assertTrue(url.getUrl().contains(testBucket));
+    assertTrue(url.getUrl().contains("sample-file.txt"));
     System.out.format("Generated LocalStack URL: %s", url);
   }
 }

@@ -1,27 +1,42 @@
 package org.ssglobal.revalida.ssclassroom.model;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.ssglobal.revalida.ssclassroom.enums.Status;
+
+import java.time.LocalDateTime;
 
 
-@Getter
-@Setter
-@Entity
 @Data
+@Entity
 public class SubmissionModel {
 
-    private Integer submissionId;
+    @Id
+    private String submissionId;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public Integer getSubmissionId() {
-        return submissionId;
-    }
+    private String assignmentId; // will reference assignment Id once assignment model is created
+
+    @Id
+    private String learnerId;
+
+    @Column(name = "status")
+    private Status status;
+
+    @Column(name = "submitted_at")
+    private LocalDateTime submittedAt;
+
+    @OneToOne(
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JoinColumn(name = "artifactId") // owns the foreign key
+    private SubmissionArtifactModel submissionArtifact;
+    private String grade;
+
+
 
 }

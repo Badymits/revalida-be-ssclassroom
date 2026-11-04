@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 
 @Repository
-public interface SubmissionRepository extends JpaRepository<SubmissionModel, Integer> {
+public interface SubmissionRepository extends JpaRepository<SubmissionModel, String> {
 }

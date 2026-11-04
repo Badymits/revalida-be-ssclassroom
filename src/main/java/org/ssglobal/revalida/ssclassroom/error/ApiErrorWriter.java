@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component

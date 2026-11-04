@@ -1,5 +1,7 @@
 package org.ssglobal.revalida.ssclassroom.error;
 
+import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
+
 import java.util.List;
 
 public record ApiError(Body error) {

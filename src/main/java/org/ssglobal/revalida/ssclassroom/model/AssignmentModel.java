@@ -45,6 +45,7 @@ public class AssignmentModel {
     private String instructions = "";
 
     @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "submission_type", nullable = false, length = 10)
     private SubmissionKind submissionKind;
 

@@ -25,9 +25,6 @@ public class LocalStackConfigurationTest {
   @Autowired
   private S3Service s3Service;
 
-  @Autowired
-  private S3Presigner s3Presigner;
-
   private final String testBucket = "test-bucket";
 
   @BeforeEach

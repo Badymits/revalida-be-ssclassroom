@@ -67,6 +67,7 @@ public class S3Service {
             log.info("Successfully generated URL!");
             return new PresignedUrlDto(
                     presignedGetObjectRequest.url().toExternalForm(),
+                    "placeholder_S3Key",
                     "GET",
                     expirationEpoch
             );
@@ -108,6 +109,7 @@ public class S3Service {
 
         return new PresignedUrlDto(
             presignedPutObjectRequest.url().toExternalForm(),
+            s3Key,
             "PUT",
             expirationEpoch
         );

@@ -1,8 +1,10 @@
-package org.ssglobal.revalida.ssclassroom.error;
+package org.ssglobal.revalida.ssclassroom.exceptions;
 
 import java.util.List;
 
 import lombok.Getter;
+import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
+import org.ssglobal.revalida.ssclassroom.error.ApiError;
 
 @Getter
 public class ApiException extends RuntimeException {

@@ -1,4 +1,6 @@
-package org.ssglobal.revalida.ssclassroom.error;
+package org.ssglobal.revalida.ssclassroom.exceptions;
+
+import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
 
 public class NotFoundException extends ApiException {
 

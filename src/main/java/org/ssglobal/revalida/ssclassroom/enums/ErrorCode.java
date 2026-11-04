@@ -1,4 +1,4 @@
-package org.ssglobal.revalida.ssclassroom.error;
+package org.ssglobal.revalida.ssclassroom.enums;
 
 import java.util.Arrays;
 

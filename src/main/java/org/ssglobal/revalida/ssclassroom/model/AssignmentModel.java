@@ -13,6 +13,7 @@ import org.ssglobal.revalida.ssclassroom.enums.AssignmentStatus;
 import org.ssglobal.revalida.ssclassroom.enums.Role;
 import org.ssglobal.revalida.ssclassroom.service.PrefixedIdService;
 
+import java.util.List;
 
 @Entity
 @Table(name = "assignment",
@@ -57,4 +58,11 @@ public class AssignmentModel {
     @Column(name = "status", nullable = false, length = 10)
     @Builder.Default
     private AssignmentStatus status = AssignmentStatus.Draft;
+
+    @OneToMany(
+            fetch = FetchType.LAZY,
+            targetEntity = SubmissionModel.class,
+            mappedBy = "assignmentModel"
+    )
+    private List<SubmissionModel> submissionModelList;
 }

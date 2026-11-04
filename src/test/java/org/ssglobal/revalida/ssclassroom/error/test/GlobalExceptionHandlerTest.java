@@ -22,11 +22,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.ssglobal.revalida.ssclassroom.error.ApiError;
 import org.ssglobal.revalida.ssclassroom.error.ApiErrorController;
-import org.ssglobal.revalida.ssclassroom.error.ConflictException;
-import org.ssglobal.revalida.ssclassroom.error.ErrorCode;
+import org.ssglobal.revalida.ssclassroom.exceptions.ConflictException;
+import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
 import org.ssglobal.revalida.ssclassroom.error.GlobalExceptionHandler;
-import org.ssglobal.revalida.ssclassroom.error.NotFoundException;
-import org.ssglobal.revalida.ssclassroom.error.StateInvalidException;
+import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
+import org.ssglobal.revalida.ssclassroom.exceptions.StateInvalidException;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.validation.Valid;

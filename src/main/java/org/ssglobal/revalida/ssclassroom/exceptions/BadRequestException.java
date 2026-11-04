@@ -1,4 +1,7 @@
-package org.ssglobal.revalida.ssclassroom.error;
+package org.ssglobal.revalida.ssclassroom.exceptions;
+
+import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
+import org.ssglobal.revalida.ssclassroom.error.ApiError;
 
 import java.util.List;
 

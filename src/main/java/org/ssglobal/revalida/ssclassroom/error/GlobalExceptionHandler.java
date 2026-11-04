@@ -21,6 +21,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
+import org.ssglobal.revalida.ssclassroom.exceptions.ApiException;
 
 @Slf4j
 @RestControllerAdvice

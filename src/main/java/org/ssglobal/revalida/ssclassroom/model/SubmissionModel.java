@@ -2,7 +2,6 @@ package org.ssglobal.revalida.ssclassroom.model;
 
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
@@ -10,33 +9,30 @@ import org.ssglobal.revalida.ssclassroom.enums.Status;
 import java.time.LocalDateTime;
 
 
-@Data
+@Getter
+@Setter
 @Entity
+@Table(name = "submission")
 public class SubmissionModel {
 
-    @Id
-    private String submissionId;
+    @EmbeddedId
+    private SubmissionIdCompositeModel submissionId;
 
-    @Id
-    private String assignmentId; // will reference assignment Id once assignment model is created
-
-    @Id
-    private String learnerId;
-
-    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private Status status;
 
-    @Column(name = "submitted_at")
+    @Column(name = "submitted_at", nullable = false)
     private LocalDateTime submittedAt;
 
-    @OneToOne(
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
+    // Setting this is mostly for Java object-graph navigation (fetching titles, etc.)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @MapsId("assignmentId")
+    @JoinColumn(
+            name = "assignmentId",
+            referencedColumnName = "assignmentId"
     )
-    @JoinColumn(name = "artifactId") // owns the foreign key
-    private SubmissionArtifactModel submissionArtifact;
-    private String grade;
-
+    private AssignmentModel assignmentModel;
 
 
 }

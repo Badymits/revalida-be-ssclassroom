@@ -1,4 +1,4 @@
-package org.ssglobal.revalida.ssclassroom.dto;
+package org.ssglobal.revalida.ssclassroom.dto.UploadSubmission;
 
 
 import lombok.Data;

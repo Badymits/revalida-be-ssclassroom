@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class PresignedUrlDto {
+public class PresignedS3UrlDto {
 
   private String url;
   private String s3Key;

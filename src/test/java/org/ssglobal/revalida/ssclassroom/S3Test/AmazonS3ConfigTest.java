@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.ssglobal.revalida.ssclassroom.dto.PresignedUrlDto;
+import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
 import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
@@ -42,7 +42,7 @@ public class AmazonS3ConfigTest {
             any(GetObjectPresignRequest.class)))
             .thenReturn(presignedGetObjectRequest);
     // Act
-    PresignedUrlDto generatedUrl = s3Service.createPresignedGetUrl(
+    PresignedS3UrlDto generatedUrl = s3Service.createPresignedGetUrl(
             "test-file.txt", "books/sample-book.pdf");
 
     // Assert

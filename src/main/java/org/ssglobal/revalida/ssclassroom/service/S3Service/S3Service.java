@@ -7,8 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.ssglobal.revalida.ssclassroom.dto.PresignedUrlDto;
-import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
 import software.amazon.awssdk.core.internal.sync.FileContentStreamProvider;
 import software.amazon.awssdk.http.*;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -43,7 +42,7 @@ public class S3Service {
 
     //  creates time-limited URLs that grant temporary access to
     //  specific S3 objects without requiring AWS credentials, ideal for secure file sharing.
-    public PresignedUrlDto createPresignedGetUrl(String bucketName, String keyName){
+    public PresignedS3UrlDto createPresignedGetUrl(String bucketName, String keyName){
 
       log.info("Generating presigned url");
         try {
@@ -65,7 +64,7 @@ public class S3Service {
                     (int) presignedGetObjectRequest.expiration().getEpochSecond();
 
             log.info("Successfully generated URL!");
-            return new PresignedUrlDto(
+            return new PresignedS3UrlDto(
                     presignedGetObjectRequest.url().toExternalForm(),
                     "placeholder_S3Key",
                     "GET",
@@ -78,7 +77,7 @@ public class S3Service {
         }
     }
 
-    public PresignedUrlDto createPresignedPutUrl (
+    public PresignedS3UrlDto createPresignedPutUrl (
             String originalFileName, String contentType){
       log.info("Generating presigned PUT url for key");
 
@@ -107,7 +106,7 @@ public class S3Service {
 
         log.info("Successfully generated PUT URL for key: {}", s3Key);
 
-        return new PresignedUrlDto(
+        return new PresignedS3UrlDto(
             presignedPutObjectRequest.url().toExternalForm(),
             s3Key,
             "PUT",

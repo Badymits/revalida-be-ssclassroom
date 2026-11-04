@@ -9,6 +9,7 @@ import lombok.Data;
 public class PresignedUrlDto {
 
   private String url;
+  private String s3Key;
   private String method;
   private Integer expiresIn;
 

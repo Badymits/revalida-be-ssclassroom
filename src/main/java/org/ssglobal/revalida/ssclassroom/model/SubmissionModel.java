@@ -29,10 +29,9 @@ public class SubmissionModel {
     @ManyToOne(fetch = FetchType.EAGER)
     @MapsId("assignmentId")
     @JoinColumn(
-            name = "assignmentId",
-            referencedColumnName = "assignmentId"
+            name = "assignment_id",
+            nullable = false
     )
     private AssignmentModel assignmentModel;
-
 
 }

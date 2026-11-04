@@ -1,18 +1,21 @@
 package org.ssglobal.revalida.ssclassroom.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.ssglobal.revalida.ssclassroom.dto.PresignedUrlDto;
-import org.ssglobal.revalida.ssclassroom.dto.UploadSubmissionRequestDto;
-import org.ssglobal.revalida.ssclassroom.dto.UploadSubmissionResponseDto;
+import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
+import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
+import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.exceptions.PayloadTooLargeException;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionArtifactModel;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionArtifactRepository;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionRepository;
 import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;
+
+import java.util.List;
 
 
 @Service
@@ -40,6 +43,11 @@ public class SubmissionService {
     return null;
   }
 
+  public List<SubmissionModel> fetchSubmissionsByAssignmentId(String assignmentId){
+    return submissionRepository.findByAssignmentId(assignmentId)
+            .orElseThrow(() -> new EntityNotFoundException(""));
+  }
+
   @Transactional
   public UploadSubmissionResponseDto uploadSubmission (
           UploadSubmissionRequestDto submissionRequestDto) {
@@ -54,7 +62,7 @@ public class SubmissionService {
     }
 
     // Retrieve URL
-    PresignedUrlDto generatedUrl =
+    PresignedS3UrlDto generatedUrl =
             s3Service.createPresignedPutUrl(
               submissionRequestDto.getFilename(),
               submissionRequestDto.getContentType()
@@ -79,8 +87,10 @@ public class SubmissionService {
     );
   }
 
+  //public TurnInSubmissionRequestDto
+
   private UploadSubmissionResponseDto toDto(
-          String artifactId, String s3Key, PresignedUrlDto generatedUrl){
+          String artifactId, String s3Key, PresignedS3UrlDto generatedUrl){
     UploadSubmissionResponseDto responseDto = new UploadSubmissionResponseDto();
 
     responseDto.setArtifactId(artifactId);

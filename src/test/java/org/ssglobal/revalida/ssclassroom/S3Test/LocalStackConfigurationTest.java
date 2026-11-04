@@ -5,12 +5,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.ssglobal.revalida.ssclassroom.dto.PresignedUrlDto;
+import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
 import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,7 +38,7 @@ public class LocalStackConfigurationTest {
   @Test
   void testGeneratePresignedUrlWithLocalStack() {
     // Act
-    PresignedUrlDto url = s3Service.createPresignedGetUrl(testBucket, "sample-file.txt");
+    PresignedS3UrlDto url = s3Service.createPresignedGetUrl(testBucket, "sample-file.txt");
 
     // Assert
     assertNotNull(url);

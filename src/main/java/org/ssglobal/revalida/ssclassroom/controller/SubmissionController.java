@@ -19,6 +19,13 @@ public class SubmissionController {
 
   private final SubmissionService submissionService;
 
+  // test controller to check connection to frontend
+  @GetMapping("/check-connection")
+  public ResponseEntity<String> checkConnection(){
+    return ResponseEntity.status(HttpStatusCode.valueOf(200))
+            .body("Hello From Backend!");
+  }
+
   // controller stubs
   @GetMapping("/assignments/{assignmentId}/my-submission")
   public ResponseEntity<String> submitAssignemnt(

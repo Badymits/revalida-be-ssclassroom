@@ -15,3 +15,4 @@ aws:
       pdf: pdf-submissions-bucket
       txt: txt-submissions-bucket
       zip: zip-submissions-bucket
+      docx: docx-submissions-bucket

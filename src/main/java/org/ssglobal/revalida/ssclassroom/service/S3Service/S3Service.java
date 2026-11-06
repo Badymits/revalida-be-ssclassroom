@@ -33,9 +33,6 @@ public class S3Service {
 
     private final S3Presigner s3Presigner;
 
-    @Value("${aws.s3.bucket-name}")
-    private String awsBucket;
-
     @Value("${aws.s3.buckets.pdf}")
     private String awsPdfBucket;
 
@@ -44,6 +41,9 @@ public class S3Service {
 
     @Value("${aws.s3.buckets.zip}")
     private String awsZipBucket;
+
+    @Value("${aws.s3.buckets.docx}")
+    private String awsDocxBucket;
 
     @Autowired
     public S3Service(S3Presigner s3Presigner){
@@ -96,7 +96,7 @@ public class S3Service {
         String s3Key = generatedUniqueKey(originalFileName);
 
         PutObjectRequest objectRequest = PutObjectRequest.builder()
-                .bucket(awsBucket)
+                .bucket(resolveBucketForFile(fileType))
                 .key(s3Key)
                 .contentType(contentType) // Crucial so S3 stores the correct MIME type
                 .build();
@@ -174,8 +174,12 @@ public class S3Service {
         case "pdf" -> awsPdfBucket;
         case "txt" -> awsTxtBucket;
         case "zip" -> awsZipBucket;
-        default -> throw new InvalidFileException("Unsupported File Type %s"
+        case "" -> "";
+        default -> {
+            log.error("File type received: {}", fileExtension);
+            throw new InvalidFileException("Unsupported File Type %s"
                 .formatted(fileExtension));
+        }
       };
     }
 }

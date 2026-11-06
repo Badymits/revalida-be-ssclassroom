@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
 import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @SpringBootTest
+@ActiveProfiles("local")
 public class LocalStackConfigurationTest {
 
   @Autowired

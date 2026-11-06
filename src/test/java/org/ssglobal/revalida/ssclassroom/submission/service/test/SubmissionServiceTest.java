@@ -42,7 +42,7 @@ public class SubmissionServiceTest {
 
     PayloadTooLargeException exception = assertThrows(
             PayloadTooLargeException.class,
-            () -> submissionService.uploadSubmission(requestDto),
+            () -> submissionService.generateUploadUrlSubmission(requestDto),
             "File size too large!"
     );
 
@@ -108,7 +108,7 @@ public class SubmissionServiceTest {
     String submissionId = "sub_0001";
 
     SubmissionModel existingModel = new SubmissionModel();
-    existingModel.setStatus(Status.INVALID);
+    //existingModel.setStatus(Status);
 
     when(submissionRepository.findById(submissionId))
             .thenReturn(Optional.of(existingModel));
@@ -116,4 +116,6 @@ public class SubmissionServiceTest {
     assertThrows(StateInvalidException.class,
             () -> submissionService.unsubmitSubmission(submissionId));
   }
+
+
 }

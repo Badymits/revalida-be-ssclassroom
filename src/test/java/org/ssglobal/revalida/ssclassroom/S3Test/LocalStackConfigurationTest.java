@@ -46,4 +46,11 @@ public class LocalStackConfigurationTest {
     assertTrue(url.getUrl().contains("sample-file.txt"));
     System.out.format("Generated LocalStack URL: %s", url);
   }
+
+  @Test
+  public void testPresignedPutUrlDurationExceed15Minutes() {
+
+    PresignedS3UrlDto url = s3Service.createPresignedPutUrl(
+            "", "", "");
+  }
 }

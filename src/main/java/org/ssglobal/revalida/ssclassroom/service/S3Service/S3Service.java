@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
+import org.ssglobal.revalida.ssclassroom.exceptions.InvalidFileException;
 import software.amazon.awssdk.core.internal.sync.FileContentStreamProvider;
 import software.amazon.awssdk.http.*;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
@@ -34,6 +35,15 @@ public class S3Service {
 
     @Value("${aws.s3.bucket-name}")
     private String awsBucket;
+
+    @Value("${aws.s3.buckets.pdf}")
+    private String awsPdfBucket;
+
+    @Value("${aws.s3.buckets.txt}")
+    private String awsTxtBucket;
+
+    @Value("${aws.s3.buckets.zip}")
+    private String awsZipBucket;
 
     @Autowired
     public S3Service(S3Presigner s3Presigner){
@@ -78,7 +88,7 @@ public class S3Service {
     }
 
     public PresignedS3UrlDto createPresignedPutUrl (
-            String originalFileName, String contentType){
+            String originalFileName, String contentType, String fileType){
       log.info("Generating presigned PUT url for key");
 
       try {
@@ -152,8 +162,20 @@ public class S3Service {
     }
 
     private String generatedUniqueKey(String originalFilename){
-      String uniqueId = UUID.randomUUID().toString();
 
-      return String.format("sub/%s/%s", uniqueId, originalFilename);
+      return String.format(
+              "sub/%s/%s",
+              UUID.randomUUID().toString(),
+              originalFilename);
+    }
+
+    private String resolveBucketForFile(String fileExtension) {
+      return switch (fileExtension.toLowerCase()){
+        case "pdf" -> awsPdfBucket;
+        case "txt" -> awsTxtBucket;
+        case "zip" -> awsZipBucket;
+        default -> throw new InvalidFileException("Unsupported File Type %s"
+                .formatted(fileExtension));
+      };
     }
 }

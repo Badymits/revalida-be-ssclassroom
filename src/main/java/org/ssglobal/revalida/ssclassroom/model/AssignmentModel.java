@@ -1,6 +1,7 @@
 package org.ssglobal.revalida.ssclassroom.model;
 
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 import org.ssglobal.revalida.ssclassroom.service.PrefixedIdService;
 
 import jakarta.persistence.*;
@@ -47,7 +48,7 @@ public class AssignmentModel {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "submission_type", nullable = false, length = 10)
-    private SubmissionKind submissionKind;
+    private SubmissionType submissionType;
 
     @Min(0) @Max(1000)
     @Column(nullable = false)

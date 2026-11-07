@@ -29,7 +29,7 @@ public class ReviewController {
 	}
 
 	@PostMapping("/submissions/{submissionId}/return")
-	@PreAuthorize("hasRole('TRAINER')")
+	@PreAuthorize("hasRole('trainer')")
 	public ResponseEntity<ReturnResponseDto> returnSubmission(
 			@PathVariable String submissionId,
 			@Valid @RequestBody ReturnRequestDto request, 

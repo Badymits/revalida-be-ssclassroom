@@ -1,13 +1,30 @@
 package org.ssglobal.revalida.ssclassroom.controller;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionRequestDto;
+import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionResponseDto;
+import org.ssglobal.revalida.ssclassroom.dto.Unsubmit.UnsubmitResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
+import org.ssglobal.revalida.ssclassroom.service.SubmissionService;
 
 
-@RestController("/api/v1")
+@RestController
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
 public class SubmissionController {
+
+  private final SubmissionService submissionService;
+
+  // test controller to check connection to frontend
+  @GetMapping("/check-connection")
+  public ResponseEntity<String> checkConnection(){
+    return ResponseEntity.status(HttpStatusCode.valueOf(200))
+            .body("Hello From Backend!");
+  }
 
   // controller stubs
   @GetMapping("/assignments/{assignmentId}/my-submission")
@@ -19,8 +36,6 @@ public class SubmissionController {
     return ResponseEntity.ok("success");
   }
 
-
-
   @PostMapping("/submissions/{submissionId}/upload-url")
   public ResponseEntity<Boolean> uploadFileWithS3Url(
           @PathVariable String submissionId,
@@ -31,15 +46,26 @@ public class SubmissionController {
   }
 
   @PostMapping("/submissions/{submissionId}/turn-in")
-  public ResponseEntity<Boolean> turnInSubmission() {
+  public ResponseEntity<TurnInSubmissionResponseDto> turnInSubmission(
+          @PathVariable String submissionId,
+          @RequestBody TurnInSubmissionRequestDto submissionRequestDto
+  ) {
+    TurnInSubmissionResponseDto responseDto =
+            submissionService.updateSubmissionTurnIn(submissionId, submissionRequestDto);
 
-    return ResponseEntity.ok(true);
+    return ResponseEntity.status(HttpStatusCode.valueOf(200)).body(responseDto);
   }
 
   @PostMapping("/submissions/{submissionId}/unsubmit")
-  public ResponseEntity<Boolean> unsubmitSubmission() {
+  public ResponseEntity<UnsubmitResponseDto> unsubmitSubmission(
+          @PathVariable String submissionId) {
 
-    return ResponseEntity.ok(true);
+    UnsubmitResponseDto responseDto =
+            submissionService.unsubmitSubmission(submissionId);
+
+    return ResponseEntity
+            .status(HttpStatusCode.valueOf(200))
+            .body(responseDto);
   }
 
   @GetMapping("/submissions/{submissionId}")

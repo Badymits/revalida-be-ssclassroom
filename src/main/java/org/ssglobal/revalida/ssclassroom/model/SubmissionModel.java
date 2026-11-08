@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class SubmissionModel {
 
     @EmbeddedId
-    private SubmissionIdCompositeModel submissionId;
+    private SubmissionIdCompositeModel submissionCompositeId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

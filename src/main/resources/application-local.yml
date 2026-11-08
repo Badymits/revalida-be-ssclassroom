@@ -11,4 +11,8 @@ aws:
     region: ap-southeast-1
     access-key: test
     secret-key: test
-    bucket: my-bucket
+    buckets:
+      pdf: pdf-submissions-bucket
+      txt: txt-submissions-bucket
+      zip: zip-submissions-bucket
+      docx: docx-submissions-bucket

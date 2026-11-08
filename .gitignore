@@ -32,7 +32,3 @@ build/
 ### VS Code ###
 .vscode/
 .env
-
-
-# /src/main/resources/db/migration-local
-# src/main/resources/application-local.yml

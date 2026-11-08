@@ -5,11 +5,6 @@
 # so if we create a local profile (application-local.yml this file)
 # this will only load when app runs with "local" profile
 
-spring:
-  flyway:
-    # db/migration-local holds seed data (test users/cohorts) that must only exist locally
-    locations: classpath:db/migration,classpath:db/migration-local
-
 aws:
   s3:
     endpoint: http://localhost:4566

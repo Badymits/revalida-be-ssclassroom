@@ -1,7 +1,10 @@
 package org.ssglobal.revalida.ssclassroom.service;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.encrypt.BytesEncryptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -43,6 +47,7 @@ public class AuthService {
     private final CohortRepository cohortRepository;
     private final CohortMemberRepository cohortMemberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final BytesEncryptor nameEncryptor;
     private final AuthenticationManager authenticationManager;
     private final JwtEncoder jwtEncoder;
 
@@ -85,8 +90,9 @@ public class AuthService {
         }
 
         AppUserModel user = AppUserModel.builder()
-                .firstName(request.firstName().trim())
-                .lastName(request.lastName().trim())
+                // names are stored encrypted and never decrypted by this module; the password is hashed (one-way)
+                .firstName(encryptName(request.firstName().trim()))
+                .lastName(encryptName(request.lastName().trim()))
                 .username(username)
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .role(role)
@@ -125,6 +131,11 @@ public class AuthService {
                         .map(CohortMemberModel::getCohortId).toList()
                 : List.of();
         return MeResponseDto.of(user, cohortIds);
+    }
+
+    /** AES-GCM encrypts the name (random IV each time) and stores it as Base64; nothing in this module decrypts it. */
+    private String encryptName(String name) {
+        return Base64.getEncoder().encodeToString(nameEncryptor.encrypt(name.getBytes(UTF_8)));
     }
 
     private LoginResponseDto issueToken(AppUserModel user) {

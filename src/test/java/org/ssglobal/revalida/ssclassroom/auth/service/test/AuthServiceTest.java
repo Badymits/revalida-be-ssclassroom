@@ -8,7 +8,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,11 +26,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.encrypt.BytesEncryptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.ssglobal.revalida.ssclassroom.config.MySecurityContext;
 import org.ssglobal.revalida.ssclassroom.dto.Auth.CohortOptionDto;
 import org.ssglobal.revalida.ssclassroom.dto.Auth.LoginRequestDto;
 import org.ssglobal.revalida.ssclassroom.dto.Auth.LoginResponseDto;
@@ -45,11 +49,14 @@ import org.ssglobal.revalida.ssclassroom.repository.AppUserRepository;
 import org.ssglobal.revalida.ssclassroom.repository.CohortMemberRepository;
 import org.ssglobal.revalida.ssclassroom.repository.CohortRepository;
 import org.ssglobal.revalida.ssclassroom.service.AuthService;
+import org.ssglobal.revalida.ssclassroom.service.NameEncryptionService;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
     private static final String COHORT = "crs_SEED_BACKEND_Q4";
+    private static final String TEST_KEY = Base64.getEncoder()
+            .encodeToString("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8));
 
     @Mock AppUserRepository appUserRepository;
     @Mock CohortRepository cohortRepository;
@@ -60,13 +67,22 @@ class AuthServiceTest {
     // real encoder: we want to see that the stored value really is a BCrypt hash
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    // real bean from MySecurityContext with a throwaway 32-byte key: we want to see the stored names really are encrypted
+    BytesEncryptor nameEncryptor = new MySecurityContext().nameEncryptor(
+            TEST_KEY);
+
     AuthService authService;
 
     @BeforeEach
     void setUp() {
         authService = new AuthService(appUserRepository, cohortRepository, cohortMemberRepository,
-                passwordEncoder, authenticationManager, jwtEncoder);
+                passwordEncoder, nameEncryptor, authenticationManager, jwtEncoder);
         ReflectionTestUtils.setField(authService, "expirationHours", 8L);
+    }
+
+    // same steps AuthService uses: AES-GCM encrypt, then Base64
+    private String enc(String name) {
+        return Base64.getEncoder().encodeToString(nameEncryptor.encrypt(name.getBytes(StandardCharsets.UTF_8)));
     }
 
     private static RegisterRequestDto learner(String username, String cohortId) {
@@ -106,7 +122,7 @@ class AuthServiceTest {
 
         assertThat(result.id()).isEqualTo("usr_L1");
         assertThat(result.role()).isEqualTo(Role.learner);
-        assertThat(result.displayName()).isEqualTo("Ada Lovelace");
+        assertThat(result.displayName()).isEqualTo("ada");
         assertThat(result.cohortIds()).containsExactly(COHORT);
     }
 
@@ -135,8 +151,32 @@ class AuthServiceTest {
         ArgumentCaptor<AppUserModel> saved = ArgumentCaptor.forClass(AppUserModel.class);
         verify(appUserRepository).saveAndFlush(saved.capture());
         assertThat(saved.getValue().getUsername()).isEqualTo("ada");
-        assertThat(saved.getValue().getFirstName()).isEqualTo("Ada");
+        assertThat(new NameEncryptionService(TEST_KEY).decrypt(saved.getValue().getFirstName())).isEqualTo("Ada");
+        assertThat(new NameEncryptionService(TEST_KEY).decrypt(saved.getValue().getLastName())).isEqualTo("Lovelace");
         verify(cohortRepository).existsById(COHORT);
+    }
+
+    @Test
+    void registerLearner_storesEncryptedNamesNotPlainText() {
+        when(cohortRepository.existsById(COHORT)).thenReturn(true);
+        stubSaveAssignsId("usr_L1");
+
+        authService.register(learner("ada", COHORT));
+
+        ArgumentCaptor<AppUserModel> saved = ArgumentCaptor.forClass(AppUserModel.class);
+        verify(appUserRepository).saveAndFlush(saved.capture());
+        assertThat(saved.getValue().getFirstName()).doesNotContain("Ada");
+        assertThat(saved.getValue().getLastName()).doesNotContain("Lovelace");
+        // a 100-char name must still fit the 600-char column
+        assertThat(enc("€".repeat(100)).length()).isLessThanOrEqualTo(600);
+    }
+
+    @Test
+    void encryptedNames_areValidAesGcmThatTheReviewModuleCanDecrypt() {
+        String key = TEST_KEY;
+        NameEncryptionService d3Service = new NameEncryptionService(key);
+
+        assertThat(d3Service.decrypt(enc("Ada"))).isEqualTo("Ada");
     }
 
     @Test
@@ -255,7 +295,7 @@ class AuthServiceTest {
 
     @Test
     void me_learner_returnsAssignedCohort() {
-        AppUserModel user = AppUserModel.builder().userId("usr_L1").firstName("Ada").lastName("Lovelace")
+        AppUserModel user = AppUserModel.builder().userId("usr_L1").firstName(enc("Ada")).lastName(enc("Lovelace"))
                 .role(Role.learner).build();
         when(appUserRepository.findById("usr_L1")).thenReturn(Optional.of(user));
         when(cohortMemberRepository.findByUserId("usr_L1")).thenReturn(List.of(new CohortMemberModel(COHORT, "usr_L1")));
@@ -268,7 +308,7 @@ class AuthServiceTest {
 
     @Test
     void me_trainer_hasEmptyCohortIds() {
-        AppUserModel user = AppUserModel.builder().userId("usr_T1").firstName("Tom").lastName("Trainer")
+        AppUserModel user = AppUserModel.builder().userId("usr_T1").firstName(enc("Tom")).lastName(enc("Trainer"))
                 .role(Role.trainer).build();
         when(appUserRepository.findById("usr_T1")).thenReturn(Optional.of(user));
 
@@ -277,12 +317,13 @@ class AuthServiceTest {
     }
 
     @Test
-    void me_displayNameIsCappedAtSpecLength() {
-        AppUserModel user = AppUserModel.builder().userId("usr_T1").firstName("A".repeat(100)).lastName("B".repeat(100))
+    void me_displayNameIsTheUsername_neverTheEncryptedNames() {
+        AppUserModel user = AppUserModel.builder().userId("usr_T1").username("tom")
+                .firstName(enc("Tom")).lastName(enc("Trainer"))
                 .role(Role.trainer).build();
         when(appUserRepository.findById("usr_T1")).thenReturn(Optional.of(user));
 
-        assertThat(authService.me("usr_T1").displayName()).hasSize(120);
+        assertThat(authService.me("usr_T1").displayName()).isEqualTo("tom");
     }
 
     @Test

@@ -2,6 +2,7 @@ package org.ssglobal.revalida.ssclassroom.config;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.util.Base64;
 import java.util.List;
 
 import javax.crypto.SecretKey;
@@ -23,6 +24,9 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.encrypt.AesGcmBytesEncryptor;
+import org.springframework.security.crypto.encrypt.BytesEncryptor;
+import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -104,6 +108,14 @@ public class MySecurityContext {
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
+	}
+
+	// encrypts first/last name before they are stored (write-only, nothing in D4 decrypts it).
+	// Spring Security AES-GCM with a random 12-byte IV per value; the key is APP_ENCRYPTION_KEY (Base64 of 16/24/32 bytes).
+	@Bean
+	public BytesEncryptor nameEncryptor(@Value("${APP_ENCRYPTION_KEY}") String base64Key) {
+		SecretKey key = new SecretKeySpec(Base64.getDecoder().decode(base64Key), "AES");
+		return AesGcmBytesEncryptor.withSecretKey(key).ivGenerator(KeyGenerators.secureRandom(12)).build();
 	}
 
 	@Bean

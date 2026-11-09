@@ -169,7 +169,7 @@ public class S3Service {
               originalFilename);
     }
 
-    private String resolveBucketForFile(String fileExtension) {
+    public String resolveBucketForFile(String fileExtension) {
       return switch (fileExtension.toLowerCase()){
         case "pdf" -> awsPdfBucket;
         case "txt" -> awsTxtBucket;

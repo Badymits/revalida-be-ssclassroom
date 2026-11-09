@@ -11,6 +11,7 @@ import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRe
 import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.exceptions.InvalidFileException;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.exceptions.PayloadTooLargeException;
 import org.ssglobal.revalida.ssclassroom.exceptions.StateInvalidException;
@@ -93,6 +94,43 @@ public class SubmissionServiceTest {
   }
 
   @Test
+  public void testRetrieveFileType_TextSunny(){
+    String file = "dummy.txt";
+    String res = submissionService.retrieveFileExtension(file);
+
+    assertEquals("txt", res);
+  }
+
+  // test to retrieve last file extension after multiple dots
+  @Test
+  public void testRetrieveFileType_TextSunny_MultipleDots(){
+    String file = "my.dummy.txt.pdf";
+    String res = submissionService.retrieveFileExtension(file);
+
+    assertEquals("pdf", res);
+  }
+
+  @Test
+  public void testRetrieveFileType_TextRainyOne(){
+    String file = "dummy.txt";
+    String res = submissionService.retrieveFileExtension(file);
+
+    assertNotEquals("pdf", res);
+  }
+
+  // testing inputs with no file extension
+  @Test
+  public void testRetrieveFileType_TextRainyTwo(){
+    String file = "dummy";
+
+    assertThrows(StringIndexOutOfBoundsException.class, () -> {
+      submissionService.retrieveFileExtension(file);
+    });
+  }
+
+
+
+  @Test
   public void testUnsubmitSubmission_IdNotFound() {
     String submissionId = "sub_01234";
 
@@ -104,11 +142,14 @@ public class SubmissionServiceTest {
   }
 
   @Test
+  /*
+    Invalid States in unsubmitting a submission: Assigned OR Returned
+   */
   public void testUnsubmitSubmission_InvalidState(){
     String submissionId = "sub_0001";
 
     SubmissionModel existingModel = new SubmissionModel();
-    //existingModel.setStatus(Status);
+    existingModel.setStatus(Status.RETURNED);
 
     when(submissionRepository.findById(submissionId))
             .thenReturn(Optional.of(existingModel));

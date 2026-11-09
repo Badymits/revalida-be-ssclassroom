@@ -59,7 +59,7 @@ public class AssignmentModel {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 10)
     @Builder.Default
-    private AssignmentStatus status = AssignmentStatus.Draft;
+    private AssignmentStatus status = AssignmentStatus.draft;
 
     @OneToMany(
             fetch = FetchType.LAZY,

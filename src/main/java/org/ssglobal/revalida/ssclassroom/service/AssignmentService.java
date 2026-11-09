@@ -97,12 +97,12 @@ public class AssignmentService {
     public PublishResponseDto publish(String assignmentId, PublishRequestDto req) {
         AssignmentModel a = find(assignmentId);
 
-        if (a.getStatus() != AssignmentStatus.Draft) {
+        if (a.getStatus() != AssignmentStatus.draft) {
             throw new StateInvalidException(
                     "Only draft assignments can be published (current: " + a.getStatus() + ")");
         }
 
-        a.setStatus(AssignmentStatus.Published);  
+        a.setStatus(AssignmentStatus.published);  
         return null;
     }
 

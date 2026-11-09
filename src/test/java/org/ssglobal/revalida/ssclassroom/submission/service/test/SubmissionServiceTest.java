@@ -39,11 +39,11 @@ public class SubmissionServiceTest {
     long fiftyMegaBytes = 51L * 1024 * 1024;
 
     UploadSubmissionRequestDto requestDto = new UploadSubmissionRequestDto();
-    requestDto.setSizeBytes((int) fiftyMegaBytes);
+    requestDto.setSizeBytes(fiftyMegaBytes);
 
     PayloadTooLargeException exception = assertThrows(
             PayloadTooLargeException.class,
-            () -> submissionService.generateUploadUrlSubmission(requestDto),
+            () -> submissionService.generateUploadUrlSubmission("", requestDto),
             "File size too large!"
     );
 
@@ -57,17 +57,17 @@ public class SubmissionServiceTest {
     TurnInSubmissionRequestDto dto = new TurnInSubmissionRequestDto();
 
     dto.setArtifactId("artifact_001");
-    dto.setKind(SubmissionKind.FILE);
+    dto.setKind(SubmissionKind.file);
 
     SubmissionModel model = new SubmissionModel();
-    model.setStatus(Status.ASSIGNED);
+    model.setStatus(Status.assigned);
 
     when(submissionRepository.findById(submissionId)).thenReturn(Optional.of(model));
     when(submissionRepository.save(any(SubmissionModel.class))).thenReturn(model);
 
     submissionService.updateSubmissionTurnIn(submissionId, dto);
 
-    assertEquals(Status.SUBMITTED, model.getStatus());
+    assertEquals(Status.submitted, model.getStatus());
 
     verify(submissionRepository, times(1)).findById(submissionId);
     verify(submissionRepository, times(1)).save(model);
@@ -80,14 +80,14 @@ public class SubmissionServiceTest {
     String submissionId = "sub_0001";
     SubmissionModel existingModel = new SubmissionModel();
 
-    existingModel.setStatus(Status.SUBMITTED);
+    existingModel.setStatus(Status.submitted);
 
     when(submissionRepository.findById(submissionId)).thenReturn(Optional.of(existingModel));
     when(submissionRepository.save(any(SubmissionModel.class))).thenReturn(existingModel);
 
    submissionService.unsubmitSubmission(submissionId);
 
-   assertEquals(Status.ASSIGNED, existingModel.getStatus());
+   assertEquals(Status.assigned, existingModel.getStatus());
 
     verify(submissionRepository, times(1)).findById(submissionId);
     verify(submissionRepository, times(1)).save(existingModel);
@@ -149,7 +149,7 @@ public class SubmissionServiceTest {
     String submissionId = "sub_0001";
 
     SubmissionModel existingModel = new SubmissionModel();
-    existingModel.setStatus(Status.RETURNED);
+    existingModel.setStatus(Status.returned);
 
     when(submissionRepository.findById(submissionId))
             .thenReturn(Optional.of(existingModel));

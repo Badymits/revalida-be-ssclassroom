@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.service.PrefixedIdService;
 
 
 @Entity
@@ -14,6 +15,7 @@ import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
 public class SubmissionArtifactModel {
 
   @Id
+  @PrefixedIdService(prefix = "art_")
   private String artifactId;
 
   @Column(name = "submission_id", nullable = false)

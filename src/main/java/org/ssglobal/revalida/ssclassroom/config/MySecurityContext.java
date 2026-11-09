@@ -2,6 +2,8 @@ package org.ssglobal.revalida.ssclassroom.config;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.util.List;
+
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -10,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,6 +32,9 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.ssglobal.revalida.ssclassroom.error.RestAccessDeniedHandler;
 import org.ssglobal.revalida.ssclassroom.error.RestAuthenticationEntryPoint;
 import org.ssglobal.revalida.ssclassroom.repository.AppUserRepository;
@@ -45,6 +51,8 @@ public class MySecurityContext {
 			RestAuthenticationEntryPoint authenticationEntryPoint,
 			RestAccessDeniedHandler accessDeniedHandler) throws Exception {
 		http.csrf(AbstractHttpConfigurer::disable)
+
+				.cors(Customizer.withDefaults())
 
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/v1/auth/**", "/api/v1/check-connection", "/error",
@@ -76,6 +84,21 @@ public class MySecurityContext {
 						.accessDeniedHandler(accessDeniedHandler));
 
 		return http.build();
+	}
+
+	// frontend origins come from app.cors.allowed-origins (comma separated); Bearer token, so no cookies
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource(
+			@Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(allowedOrigins);
+		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+		configuration.setAllowCredentials(false);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
 	}
 
 	@Bean

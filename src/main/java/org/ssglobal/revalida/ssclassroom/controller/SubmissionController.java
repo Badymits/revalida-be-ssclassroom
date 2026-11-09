@@ -8,6 +8,7 @@ import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionRe
 import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.Unsubmit.UnsubmitResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
+import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 import org.ssglobal.revalida.ssclassroom.service.SubmissionService;
 
@@ -28,7 +29,7 @@ public class SubmissionController {
 
   // controller stubs
   @GetMapping("/assignments/{assignmentId}/my-submission")
-  public ResponseEntity<String> submitAssignemnt(
+  public ResponseEntity<String> submitAssignment(
           @PathVariable String assignmentId,
           @RequestBody SubmissionModel submissionModel
   ){
@@ -37,12 +38,15 @@ public class SubmissionController {
   }
 
   @PostMapping("/submissions/{submissionId}/upload-url")
-  public ResponseEntity<Boolean> uploadFileWithS3Url(
+  public ResponseEntity<UploadSubmissionResponseDto> uploadFileWithS3Url(
           @PathVariable String submissionId,
-          @RequestBody UploadSubmissionRequestDto uploadSubmissionDto
+          @RequestBody UploadSubmissionRequestDto submissionRequestDto
           ) {
+    UploadSubmissionResponseDto submissionResponseDto =
+            submissionService.generateUploadUrlSubmission(submissionRequestDto);
 
-    return ResponseEntity.ok(true);
+    return ResponseEntity.status(HttpStatusCode.valueOf(200))
+            .body(submissionResponseDto);
   }
 
   @PostMapping("/submissions/{submissionId}/turn-in")
@@ -68,11 +72,11 @@ public class SubmissionController {
             .body(responseDto);
   }
 
-  @GetMapping("/submissions/{submissionId}")
-  public ResponseEntity<String> fetchSubmission() {
-
-    return ResponseEntity.ok("submission id 1 retrieved");
-  }
+//  @GetMapping("/submissions/{submissionId}")
+//  public ResponseEntity<String> fetchSubmission() {
+//
+//    return ResponseEntity.ok("submission id 1 retrieved");
+//  }
 
 
 }

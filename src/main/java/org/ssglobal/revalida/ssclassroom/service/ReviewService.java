@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ssglobal.revalida.ssclassroom.dto.ReturnResponseDto;
@@ -27,16 +26,13 @@ public class ReviewService {
     private final GradeRepository gradeRepository;
     private final S3Service s3Service;
     private final NameEncryptionService nameEncryptionService;
-    private final String bucketName;
 
     @Autowired
     public ReviewService(GradeRepository gradeRepository, S3Service s3Service,
-            NameEncryptionService nameEncryptionService,
-            @Value("${aws.s3.bucket-name}") String bucketName) {
+            NameEncryptionService nameEncryptionService) {
         this.gradeRepository = gradeRepository;
         this.s3Service = s3Service;
         this.nameEncryptionService = nameEncryptionService;
-        this.bucketName = bucketName;
     }
 
     public RosterResponseDto getRoster(String assignmentId, String status, int limit, String cursor) {
@@ -101,9 +97,14 @@ public class ReviewService {
     private SubmissionDetailDto.Artifact toArtifact(ArtifactRow artifact) {
         String downloadUrl = artifact.getS3Key() == null
                 ? null
-                : s3Service.createPresignedGetUrl(bucketName, artifact.getS3Key()).getUrl();
+                		: s3Service.createPresignedGetUrl(bucketFor(artifact.getName()), artifact.getS3Key()).getUrl();
 
         return new SubmissionDetailDto.Artifact(artifact.getKind(), artifact.getName(),
                 artifact.getBody(), downloadUrl);
+    }
+    
+    private String bucketFor(String fileName) {
+        String extension = fileName.substring(fileName.lastIndexOf('.') + 1);
+        return s3Service.resolveBucketForFile(extension);
     }
 }

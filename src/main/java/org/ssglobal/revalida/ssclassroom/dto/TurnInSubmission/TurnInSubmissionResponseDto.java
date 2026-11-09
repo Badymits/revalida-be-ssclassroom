@@ -14,6 +14,6 @@ public class TurnInSubmissionResponseDto {
   private String submissionId;
   private Status status;
   private LocalDateTime submittedAt;
-  private List<ArtifactDto> artifactDto;
+  private ArtifactDto artifact;
 
 }

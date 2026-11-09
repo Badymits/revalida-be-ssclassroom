@@ -27,10 +27,19 @@ public class SubmissionController {
             .body("Hello From Backend!");
   }
 
-  // controller stubs
+
   @GetMapping("/assignments/{assignmentId}/my-submission")
   public ResponseEntity<String> submitAssignment(
           @PathVariable String assignmentId,
+          @RequestBody SubmissionModel submissionModel
+  ){
+
+    return ResponseEntity.ok("success");
+  }
+
+  @GetMapping("/submissions/{submissionId}/my-submission")
+  public ResponseEntity<String> fetchAssignmentSubmission(
+          @PathVariable String submissionId,
           @RequestBody SubmissionModel submissionModel
   ){
 
@@ -43,7 +52,7 @@ public class SubmissionController {
           @RequestBody UploadSubmissionRequestDto submissionRequestDto
           ) {
     UploadSubmissionResponseDto submissionResponseDto =
-            submissionService.generateUploadUrlSubmission(submissionRequestDto);
+            submissionService.generateUploadUrlSubmission(submissionId, submissionRequestDto);
 
     return ResponseEntity.status(HttpStatusCode.valueOf(200))
             .body(submissionResponseDto);

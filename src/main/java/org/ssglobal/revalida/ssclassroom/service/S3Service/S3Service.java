@@ -63,51 +63,51 @@ public class S3Service {
       log.info("Generating presigned GET url");
         try {
 
-            if (bucketName == null || bucketName.isEmpty()) {
-                log.error("Failed to provide bucket name for presigned GET request!");
-                throw new BucketNotFoundException("Bucket name cannot be null or empty.");
-            }
+          if (bucketName == null || bucketName.isEmpty()) {
+              log.error("Failed to provide bucket name for presigned GET request!");
+              throw new BucketNotFoundException("Bucket name cannot be null or empty.");
+          }
 
-            if (keyName == null || keyName.isEmpty()){
-                log.error("Failed to provide S3 Key for presigned GET request!");
-                throw new Exception("Key for S3 Object cannot be empty!");
-            }
+          if (keyName == null || keyName.isEmpty()){
+              log.error("Failed to provide S3 Key for presigned GET request!");
+              throw new Exception("Key for S3 Object cannot be empty!");
+          }
 
-            // HeadBucket check to verify if bucket exists in S3
-            HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
-                    .bucket(bucketName)
-                    .build();
-            s3Client.headBucket(headBucketRequest);
+          // HeadBucket check to verify if bucket exists in S3
+          HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
+                  .bucket(bucketName)
+                  .build();
+          s3Client.headBucket(headBucketRequest);
 
 
-            GetObjectRequest objectRequest = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(keyName)
-                    .build();
+          GetObjectRequest objectRequest = GetObjectRequest.builder()
+                  .bucket(bucketName)
+                  .key(keyName)
+                  .build();
 
-            GetObjectPresignRequest presignRequest = GetObjectPresignRequest
-                    .builder()
-                    .signatureDuration(Duration.ofMinutes(10))
-                    .getObjectRequest(objectRequest)
-                    .build();
+          GetObjectPresignRequest presignRequest = GetObjectPresignRequest
+                  .builder()
+                  .signatureDuration(Duration.ofMinutes(10))
+                  .getObjectRequest(objectRequest)
+                  .build();
 
-            PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner
-                    .presignGetObject(presignRequest);
+          PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner
+                  .presignGetObject(presignRequest);
 
-            Integer expirationEpoch =
-                    (int) presignedGetObjectRequest.expiration().getEpochSecond();
+          Integer expirationEpoch =
+                  (int) presignedGetObjectRequest.expiration().getEpochSecond();
 
-            log.info("Successfully generated URL!");
-            return new PresignedS3UrlDto(
-                    presignedGetObjectRequest.url().toExternalForm(),
-                    "placeholder_S3Key",
-                    "GET",
-                    bucketName,
-                    expirationEpoch
-            );
+          log.info("Successfully generated GET request URL");
+          return new PresignedS3UrlDto(
+                  presignedGetObjectRequest.url().toExternalForm(),
+                  "placeholder_S3Key",
+                  "GET",
+                  bucketName,
+                  expirationEpoch
+          );
 
         } catch (NoSuchBucketException ex) {
-            log.error("Bucket with name: {} does not exist!", bucketName);
+            log.error("Bucket with name: {} does not exist", bucketName);
             throw ex;
         } catch (Exception e) {
           log.error("Exception: {}", e.getMessage());
@@ -209,7 +209,7 @@ public class S3Service {
               originalFilename);
     }
 
-    private String resolveBucketForFile(String fileExtension) {
+    public String resolveBucketForFile(String fileExtension) {
       return switch (fileExtension.toLowerCase()){
         case "pdf" -> awsPdfBucket;
         case "txt" -> awsTxtBucket;

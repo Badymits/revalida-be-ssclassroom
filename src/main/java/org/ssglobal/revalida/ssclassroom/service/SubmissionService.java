@@ -54,7 +54,7 @@ public class SubmissionService {
   public UploadSubmissionResponseDto generateUploadUrlSubmission(
           UploadSubmissionRequestDto submissionRequestDto) {
 
-    log.info("Generate Upload URL Service");
+    log.info("Generate PUT method presigned URL service...");
 
     if (submissionRequestDto.getSizeBytes() > MAX_FILE_SIZE){
       log.error("File size is too large! Submitted file size: {} MB",
@@ -63,23 +63,33 @@ public class SubmissionService {
       throw new PayloadTooLargeException("File is too large!");
     }
 
+    if (submissionRequestDto.getFilename() == null ||
+          submissionRequestDto.getFilename().isEmpty()
+    ){
+      log.error("Filename is null! Cannot proceed with upload to S3 bucket!");
+      throw new NotFoundException("Filename is null! Cannot proceed with upload to S3 bucket!");
+    }
+
+    // add checker to verify if content type is MIME (type/subtype) appropriate
+
     // get the value after the regex which is dot
-    String fileType = retrieveFileType(submissionRequestDto.getFilename());
+    String fileExtension =
+            retrieveFileExtension(submissionRequestDto.getFilename());
 
     // Retrieve URL
     PresignedS3UrlDto generatedPutUrl = s3Service.createPresignedPutUrl(
-              submissionRequestDto.getFilename(),
-              submissionRequestDto.getContentType(),
-              fileType
-            );
+            submissionRequestDto.getFilename(),
+            submissionRequestDto.getContentType(),
+            fileExtension
+          );
 
     // Create artifact which will return artifact ID back to the frontend
     SubmissionArtifactModel artifactModel = new SubmissionArtifactModel();
-    artifactModel.setUrl(generatedPutUrl.getUrl());
 
     submissionArtifactRepository.save(artifactModel);
 
-    return toDto(artifactModel.getArtifactId(),
+    return toUploadSubmissionResponseDto(
+            artifactModel.getArtifactId(),
             generatedPutUrl.getS3Key(),
             generatedPutUrl
     );
@@ -106,8 +116,13 @@ public class SubmissionService {
 
     SubmissionArtifactModel artifactModel = submissionArtifactRepository
             .findByArtifactId(submissionRequestDto.getArtifactId())
-            .orElseThrow(() -> NotFoundException.of("Artifact",
-                    submissionRequestDto.getArtifactId()));
+            .orElseThrow(() -> {
+              log.error("Artifact with ID: {} not found",
+                      submissionRequestDto.getArtifactId());
+
+              return NotFoundException.of("Artifact",
+                    submissionRequestDto.getArtifactId());
+            });
 
     SubmissionModel submission = submissionRepository.findById(submissionId)
             .orElseThrow(() -> {
@@ -116,11 +131,18 @@ public class SubmissionService {
             });
 
     submission.setStatus(Status.SUBMITTED);
+
+    artifactModel.setS3Key(submissionRequestDto.getS3Key());
     artifactModel.setSubmissionId(submissionId);
+    artifactModel.setKind(submissionRequestDto.getKind());
     //artifactModel.setContentType();
 
     submissionRepository.save(submission);
     log.info("Successfully updated submission status to SUBMITTED!");
+
+    submissionArtifactRepository.save(artifactModel);
+    log.info("Successfully saved artifact model with ID {}!",
+            submissionRequestDto.getArtifactId());
 
     return null;
   }
@@ -141,13 +163,11 @@ public class SubmissionService {
         return NotFoundException.of("Submission", submissionId);
       });
 
-    // cannot proceed with updating status if status is already set to assigned
-    // or if submission is already graded (has returned status)
-    if (submission.getStatus().equals(Status.ASSIGNED) ||
-          submission.getStatus().equals(Status.RETURNED) ||
-            submission.getStatus().equals(Status.INVALID)){
+    // cannot proceed if submission status is assigned or returned
+    if (!submission.getStatus().equals(Status.SUBMITTED)){
       log.error("Submission with state: {} is invalid", submission.getStatus());
-      throw new StateInvalidException("");
+      throw new StateInvalidException("Submission with state: {} is invalid %s"
+              .formatted( submission.getStatus()));
     }
 
     submission.setStatus(Status.ASSIGNED);
@@ -159,7 +179,7 @@ public class SubmissionService {
 
   }
 
-  private UploadSubmissionResponseDto toDto(
+  private UploadSubmissionResponseDto toUploadSubmissionResponseDto(
           String artifactId, String s3Key, PresignedS3UrlDto generatedUrl){
 
     UploadSubmissionResponseDto responseDto = new UploadSubmissionResponseDto();
@@ -168,6 +188,8 @@ public class SubmissionService {
     responseDto.setS3Key(s3Key);
     responseDto.setSignedUrl(generatedUrl);
     responseDto.setMessage("Generated Artifact ID");
+
+    log.info("Upload Submission Request DTO generated!");
 
     return responseDto;
 
@@ -183,17 +205,25 @@ public class SubmissionService {
             LocalDateTime.now()
     );
 
+    log.info("Unsubmit DTO generated!");
+
     return unsubmitDto;
 
   }
 
-  private String retrieveFileType(String filename) {
+  public String retrieveFileExtension(String filename) {
+    log.info("Retrieving file extension...");
     int lastIndex = filename.lastIndexOf('.');
 
     if (lastIndex != -1 && lastIndex < filename.length() - 1){
-      return filename.substring(lastIndex + 1).toLowerCase();
+      String fileExtension = filename.substring(lastIndex + 1)
+              .toLowerCase();
+      log.info("Successfully retrieved file extension: {}", fileExtension);
+
+      return fileExtension;
     } else {
-      throw new InvalidFileException("File type of ");
+      log.error("Extension type not found!");
+      throw new StringIndexOutOfBoundsException("Cannot read string!");
     }
   }
 }

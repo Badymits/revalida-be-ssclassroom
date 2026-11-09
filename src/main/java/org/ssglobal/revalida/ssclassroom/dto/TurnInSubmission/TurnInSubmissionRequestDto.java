@@ -7,6 +7,7 @@ import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
 public class TurnInSubmissionRequestDto {
 
   private SubmissionKind kind;
+  private String s3Key;
 
   // these fields can be null but one
   private String artifactId;

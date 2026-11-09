@@ -50,6 +50,7 @@ import org.ssglobal.revalida.ssclassroom.repository.AppUserRepository;
 import org.ssglobal.revalida.ssclassroom.service.AssignmentService;
 import org.ssglobal.revalida.ssclassroom.service.AuthService;
 import org.ssglobal.revalida.ssclassroom.service.GradeService;
+import org.ssglobal.revalida.ssclassroom.service.ReviewService;
 import org.ssglobal.revalida.ssclassroom.service.SubmissionService;
 
 /**
@@ -72,6 +73,7 @@ class SecurityApiTest {
     @MockitoBean AppUserRepository appUserRepository; // used by the UserDetailsService bean
     @MockitoBean AssignmentService assignmentService;
     @MockitoBean GradeService gradeService;
+    @MockitoBean ReviewService reviewService;
     @MockitoBean SubmissionService submissionService;
 
     // ---------- helpers ----------

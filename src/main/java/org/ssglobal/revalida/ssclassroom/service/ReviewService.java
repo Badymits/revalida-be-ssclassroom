@@ -18,7 +18,7 @@ import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.ArtifactRow;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.RosterRow;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.StatusCount;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.SubmissionRow;
-import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;
+import org.ssglobal.revalida.ssclassroom.service.S3Bucket.S3Service;
 
 @Service
 @Transactional(readOnly = true)
@@ -101,7 +101,7 @@ public class ReviewService {
     private SubmissionDetailDto.Artifact toArtifact(ArtifactRow artifact) {
         String downloadUrl = artifact.getS3Key() == null
                 ? null
-                : s3Service.createPresignedGetUrl(bucketName, artifact.getS3Key()).getUrl();
+                : s3Service.createPresignedGetUrl(bucketName, artifact.getS3Key()).getUploadUrl();
 
         return new SubmissionDetailDto.Artifact(artifact.getKind(), artifact.getName(),
                 artifact.getBody(), downloadUrl);

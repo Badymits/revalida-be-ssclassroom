@@ -1,7 +1,7 @@
 // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/examples-s3-presign.html
 // reference to work with Amazon s3 pre-signed URLs
 
-package org.ssglobal.revalida.ssclassroom.service.S3Service;
+package org.ssglobal.revalida.ssclassroom.service.S3Bucket;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,24 +9,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
 import org.ssglobal.revalida.ssclassroom.exceptions.BucketNotFoundException;
-import org.ssglobal.revalida.ssclassroom.exceptions.InvalidFileException;
-import software.amazon.awssdk.core.internal.sync.FileContentStreamProvider;
-import software.amazon.awssdk.http.*;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
-import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -60,7 +50,7 @@ public class S3Service {
     //  specific S3 objects without requiring AWS credentials, ideal for secure file sharing.
     public PresignedS3UrlDto createPresignedGetUrl(String bucketName, String keyName){
 
-      log.info("Generating presigned GET url");
+      log.info("Generating presigned GET url for {}", keyName);
         try {
 
           if (bucketName == null || bucketName.isEmpty()) {
@@ -169,36 +159,21 @@ public class S3Service {
       }
     }
 
-    public void useSdkHttpClientToPut (
-            String preSignedUrlString, File fileToPutUrl){
-        log.info("Begin {} upload", fileToPutUrl.toString());
+    public void deleteFileFromBucket(String bucketName, String s3Key){
+      log.info("Deleting Object from s3 bucket {} with key {}", bucketName, s3Key);
+      try {
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(s3Key)
+                .build();
 
-        try {
-          URI presignedUrl = URI.create(preSignedUrlString);
+        s3Client.deleteObject(deleteObjectRequest);
+        log.info("Successfully deleted object with key {}", s3Key);
 
-            SdkHttpRequest requestBuilder = SdkHttpRequest.builder()
-                    .method(SdkHttpMethod.PUT)
-                    .uri(presignedUrl)
-                    .build();
-
-            HttpExecuteRequest executeRequest = HttpExecuteRequest.builder()
-                    .request(requestBuilder)
-                    .contentStreamProvider(
-                            new FileContentStreamProvider(
-                                    fileToPutUrl.toPath())
-                    )
-                    .build();
-
-            try (SdkHttpClient sdkHttpClient = ApacheHttpClient.create()){
-                HttpExecuteResponse response = sdkHttpClient
-                        .prepareRequest(executeRequest).call();
-                log.info("Response code: {}",
-                        response.httpResponse().statusCode());
-            }
-
-        } catch (IOException ex) {
-          log.error("Error Occurred: {}", ex.getMessage());
-        }
+      } catch (S3Exception ex){
+        log.error("Failed to delete file from bucket {} with key {}", bucketName, s3Key);
+        throw new RuntimeException("Failed to delete file");
+      }
     }
 
     private String generatedUniqueKey(String originalFilename){
@@ -214,7 +189,7 @@ public class S3Service {
         case "pdf" -> awsPdfBucket;
         case "txt" -> awsTxtBucket;
         case "zip" -> awsZipBucket;
-        case "" -> "";
+        case "docs", "docx" -> awsDocxBucket;
         default -> {
             log.error("File type received: {}", fileExtension);
             throw new BucketNotFoundException(("Unsupported File Type. " +

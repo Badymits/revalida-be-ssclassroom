@@ -79,7 +79,7 @@ public class ReviewService {
                 + " " + nameEncryptionService.decrypt(row.getLastName());
 
         return new RosterResponseDto.Item(row.getSubmissionId(), row.getLearnerId(), learnerLabel,
-                row.getStatus(), row.getPoints());
+                row.getStatus(), row.getPoints(), row.getSubmittedAt());
     }
 
     private RosterResponseDto.Summary buildSummary(String assignmentId) {
@@ -97,7 +97,7 @@ public class ReviewService {
     private SubmissionDetailDto.Artifact toArtifact(ArtifactRow artifact) {
         String downloadUrl = artifact.getS3Key() == null
                 ? null
-                		: s3Service.createPresignedGetUrl(bucketFor(artifact.getName()), artifact.getS3Key()).getUrl();
+                : s3Service.createPresignedGetUrl(bucketFor(artifact.getName()), artifact.getS3Key()).getUrl();
 
         return new SubmissionDetailDto.Artifact(artifact.getKind(), artifact.getName(),
                 artifact.getBody(), downloadUrl);

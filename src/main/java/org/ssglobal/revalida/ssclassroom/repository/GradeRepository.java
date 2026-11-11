@@ -26,6 +26,7 @@ public interface GradeRepository extends JpaRepository<GradeModel, String> {
         String getLastName();
         String getStatus();
         Integer getPoints();
+        Instant getSubmittedAt();
     }
 
     interface StatusCount {
@@ -73,7 +74,8 @@ public interface GradeRepository extends JpaRepository<GradeModel, String> {
                    u.first_name AS "firstName",
                    u.last_name AS "lastName",
                    s.status AS status,
-                   g.points AS points
+                   g.points AS points,
+                   s.submitted_at as "submittedAt"
             FROM submission s
             JOIN app_user u ON u.user_id = s.learner_id
             LEFT JOIN grade g ON g.submission_id = s.submission_id

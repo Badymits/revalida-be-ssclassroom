@@ -1,5 +1,6 @@
 package org.ssglobal.revalida.ssclassroom.dto;
 
+import java.time.Instant;
 import java.util.List;
 
 public record RosterResponseDto(
@@ -19,6 +20,7 @@ public record RosterResponseDto(
     		String learnerId, 
     		String learnerLabel,
             String status, 
-            Integer points) {
+            Integer points,
+            Instant submittedAt) {
     }
 }

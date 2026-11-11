@@ -64,7 +64,7 @@ public class SubmissionController {
   @PostMapping("/submissions/{submissionId}/process-files-from-drive")
   public ResponseEntity<TurnInSubmissionResponseDto> processFileFromDrive(
           @PathVariable String submissionId,
-          @RequestParam String driveUrl
+          @RequestBody String driveUrl
   ){
     TurnInSubmissionResponseDto responseDto =
             driveSubmissionService.processDriveSubmission(submissionId, driveUrl);

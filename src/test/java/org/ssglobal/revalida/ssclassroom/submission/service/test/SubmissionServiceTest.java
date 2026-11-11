@@ -43,7 +43,7 @@ public class SubmissionServiceTest {
 
     PayloadTooLargeException exception = assertThrows(
             PayloadTooLargeException.class,
-            () -> submissionService.generateUploadUrlSubmission("", requestDto),
+            () -> submissionService.generateS3UploadUrl("", requestDto),
             "File size too large!"
     );
 
@@ -65,7 +65,7 @@ public class SubmissionServiceTest {
     when(submissionRepository.findById(submissionId)).thenReturn(Optional.of(model));
     when(submissionRepository.save(any(SubmissionModel.class))).thenReturn(model);
 
-    submissionService.updateSubmissionTurnIn(submissionId, dto);
+    submissionService.turnInSubmission(submissionId, dto);
 
     assertEquals(Status.submitted, model.getStatus());
 

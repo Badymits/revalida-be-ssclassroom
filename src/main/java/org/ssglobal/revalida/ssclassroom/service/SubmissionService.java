@@ -13,6 +13,8 @@ import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionRe
 import org.ssglobal.revalida.ssclassroom.dto.Unsubmit.UnsubmitResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionResponseDto;
+import org.ssglobal.revalida.ssclassroom.enums.AllowedContentType;
+import org.ssglobal.revalida.ssclassroom.enums.AllowedFileType;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
 import org.ssglobal.revalida.ssclassroom.exceptions.*;
@@ -126,6 +128,10 @@ public class SubmissionService {
     }
 
     // add checker to verify if content type is MIME (type/subtype) appropriate
+    if (!AllowedContentType.contains(submissionRequestDto.getContentType())) {
+      log.error("Invalid content type!");
+      throw new IllegalArgumentException("Invalid content type!");
+    }
 
     // get the value after the regex which is dot
     String fileExtension =
@@ -424,10 +430,12 @@ public class SubmissionService {
 
       artifactDto.setName(artifactModel.getArtifactName());
       artifactDto.setSizeBytes(artifactModel.getSizeBytes());
-      artifactDto.setUrl(presignedUrl);
+      artifactDto.setDownloadUrl(presignedUrl);
 
     } else if (kind.equals(SubmissionKind.text)){
       artifactDto.setBody(artifactModel.getBody());
+    } else if (kind.equals(SubmissionKind.link)){
+      artifactDto.setUrl(artifactDto.getUrl());
     }
 
     return artifactDto;
@@ -438,14 +446,22 @@ public class SubmissionService {
     int lastIndex = filename.lastIndexOf('.');
 
     if (lastIndex != -1 && lastIndex < filename.length() - 1){
-      String fileExtension = filename.substring(lastIndex + 1)
-              .toLowerCase();
-      log.info("Successfully retrieved file extension: {}", fileExtension);
+      String fileExtension = filename.substring(lastIndex + 1).toLowerCase();
 
-      return fileExtension;
+      try {
+        // Validate that it matches one of our AllowedFileType enums
+        AllowedFileType allowedType = AllowedFileType.valueOf(fileExtension);
+        log.info("Successfully retrieved and validated file extension: {}", allowedType);
+        return allowedType.name().toLowerCase();
+
+      } catch (IllegalArgumentException e) {
+        log.error("Unsupported file extension: {}", fileExtension);
+        throw new IllegalArgumentException("Unsupported file type: " + fileExtension);
+      }
+
     } else {
       log.error("Extension type not found!");
-      throw new StringIndexOutOfBoundsException("Cannot read string!");
+      throw new StringIndexOutOfBoundsException("Invalid filename or extension not found!");
     }
   }
 }

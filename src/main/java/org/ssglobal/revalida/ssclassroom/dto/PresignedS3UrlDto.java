@@ -8,7 +8,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class PresignedS3UrlDto {
 
-  private String url;
+  private String uploadUrl;
   private String s3Key;
   private String httpMethod;
   private String bucketName;

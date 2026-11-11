@@ -102,8 +102,15 @@ public class AssignmentService {
                     "Only draft assignments can be published (current: " + a.getStatus() + ")");
         }
 
-        a.setStatus(AssignmentStatus.published);  
-        return null;
+        a.setStatus(AssignmentStatus.published);
+
+        // TODO (submissions dev): create one "assigned" submission per enrolled learner here
+        // and return the real count. Until then no submission rows are created.
+        return PublishResponseDto.builder()
+                .assignmentId(a.getAssignmentId())
+                .status(a.getStatus())
+                .submissionsCreated(0)
+                .build();
     }
 
     private AssignmentModel find(String id) {

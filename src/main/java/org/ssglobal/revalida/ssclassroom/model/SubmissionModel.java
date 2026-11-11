@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 
 @Getter
@@ -23,7 +23,7 @@ public class SubmissionModel {
     private Status status;
 
     @Column(name = "submitted_at", nullable = false)
-    private LocalDateTime submittedAt;
+    private Instant submittedAt;
 
     // Setting this is mostly for Java object-graph navigation (fetching titles, etc.)
     @ManyToOne(fetch = FetchType.EAGER)

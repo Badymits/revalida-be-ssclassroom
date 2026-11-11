@@ -19,6 +19,7 @@ public record RosterResponseDto(
     		String learnerId, 
     		String learnerLabel,
             String status, 
-            Integer points) {
+            Integer points
+		) {
     }
 }

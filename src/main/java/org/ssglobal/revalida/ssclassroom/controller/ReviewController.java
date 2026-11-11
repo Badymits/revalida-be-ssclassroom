@@ -41,7 +41,7 @@ public class ReviewController {
     }
 
     @GetMapping("/assignments/{assignmentId}/submissions")
-    @PreAuthorize("hasRole('TRAINER')")
+    @PreAuthorize("hasRole('trainer')")
     public ResponseEntity<RosterResponseDto> getRoster(
             @PathVariable String assignmentId,
             @RequestParam(required = false)
@@ -58,14 +58,14 @@ public class ReviewController {
             Authentication authentication) {
 
         boolean isTrainer = authentication.getAuthorities().stream()
-                .anyMatch(authority -> "ROLE_TRAINER".equals(authority.getAuthority()));
+                .anyMatch(authority -> "ROLE_trainer".equals(authority.getAuthority()));
 
         return ResponseEntity.ok(
                 reviewService.getSubmission(submissionId, authentication.getName(), isTrainer));
     }
 
     @PostMapping("/submissions/{submissionId}/return")
-    @PreAuthorize("hasRole('TRAINER')")
+    @PreAuthorize("hasRole('trainer')")
     public ResponseEntity<ReturnResponseDto> returnSubmission(
             @PathVariable String submissionId,
             @Valid @RequestBody ReturnRequestDto request,

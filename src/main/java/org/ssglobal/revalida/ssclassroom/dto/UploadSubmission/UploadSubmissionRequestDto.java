@@ -2,6 +2,7 @@ package org.ssglobal.revalida.ssclassroom.dto.UploadSubmission;
 
 
 import lombok.Data;
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
 
 @Data
 public class UploadSubmissionRequestDto {
@@ -10,6 +11,7 @@ public class UploadSubmissionRequestDto {
   // type/subtype data types (ex: application/json, text/html, image/png)
   private String contentType;
 
-  private Integer sizeBytes;
+  private SubmissionKind kind;
+  private Long sizeBytes;
 
 }

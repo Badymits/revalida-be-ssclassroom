@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ssglobal.revalida.ssclassroom.dto.ArtifactDto;
 import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
+import org.ssglobal.revalida.ssclassroom.dto.SubmissionDetailDto;
 import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.Unsubmit.UnsubmitResponseDto;
@@ -14,18 +15,18 @@ import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRe
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
-import org.ssglobal.revalida.ssclassroom.exceptions.InvalidFileException;
-import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
-import org.ssglobal.revalida.ssclassroom.exceptions.PayloadTooLargeException;
-import org.ssglobal.revalida.ssclassroom.exceptions.StateInvalidException;
+import org.ssglobal.revalida.ssclassroom.exceptions.*;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionArtifactModel;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionArtifactRepository;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionRepository;
-import org.ssglobal.revalida.ssclassroom.service.S3Service.S3Service;
+import org.ssglobal.revalida.ssclassroom.service.S3Bucket.S3Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 @Service
@@ -47,13 +48,63 @@ public class SubmissionService {
   }
 
   @Transactional(readOnly = true)
-  public Boolean fetchSubmissionBySubmissionId(){
+  public SubmissionDetailDto fetchSubmissionBySubmissionId(String submissionId){
 
-    return false;
+    log.info("Fetching submission using submission ID: {}", submissionId);
+
+    if (submissionId == null){
+      log.error("Submission ID is null!");
+      throw new NotFoundException("Submisison ID is null!");
+    }
+
+    SubmissionModel submissionModel = submissionRepository.findBySubmissionId(submissionId)
+            .orElseThrow(() -> new NotFoundException("Submission Model not found!"));
+
+
+    List<SubmissionDetailDto.Artifact> artifacts = submissionArtifactRepository
+            .findBySubmissionId(submissionId)
+            .map(artifactModel -> {
+
+              if (artifactModel.getKind().equals(SubmissionKind.file)){
+                String bucketName = s3Service.resolveBucketForFile(
+                        retrieveFileExtension(artifactModel.getArtifactName()));
+                String url = s3Service.createPresignedGetUrl(
+                        bucketName,
+                        artifactModel.getS3Key()).getUploadUrl();
+
+                return new SubmissionDetailDto.Artifact(
+                        String.valueOf(artifactModel.getKind()),
+                        artifactModel.getArtifactName(),
+                        null,
+                        url
+                );
+              }
+
+              else {
+                return new SubmissionDetailDto.Artifact(
+                        String.valueOf(artifactModel.getKind()),
+                        null,
+                        artifactModel.getBody(),
+                        null
+                );
+              }
+            })
+            .map(List::of)
+            .orElse(Collections.emptyList());
+
+    return new SubmissionDetailDto(
+            submissionModel.getSubmissionCompositeId().getSubmissionId(),
+            submissionModel.getAssignmentModel().getAssignmentId(),
+            submissionModel.getSubmissionCompositeId().getLearnerId(),
+            submissionModel.getStatus().toString(),
+            submissionModel.getSubmittedAt(),
+            artifacts,
+            null
+    );
   }
 
   @Transactional
-  public UploadSubmissionResponseDto generateUploadUrlSubmission(
+  public UploadSubmissionResponseDto generateS3UploadUrl(
           String submissionId,
           UploadSubmissionRequestDto submissionRequestDto) {
 
@@ -68,7 +119,7 @@ public class SubmissionService {
     }
 
     if (submissionRequestDto.getFilename() == null ||
-          submissionRequestDto.getFilename().isEmpty()
+          submissionRequestDto.getFilename().isBlank()
     ){
       log.error("Filename is null! Cannot proceed with upload to S3 bucket!");
       throw new NotFoundException("Filename is null! Cannot proceed with upload to S3 bucket!");
@@ -79,6 +130,8 @@ public class SubmissionService {
     // get the value after the regex which is dot
     String fileExtension =
             retrieveFileExtension(submissionRequestDto.getFilename());
+    log.info("Retrieved file extension type: {} for file: {}",
+            fileExtension, submissionRequestDto.getFilename());
 
     // Retrieve URL
     PresignedS3UrlDto generatedPutUrl = s3Service.createPresignedPutUrl(
@@ -86,6 +139,7 @@ public class SubmissionService {
             submissionRequestDto.getContentType(),
             fileExtension
           );
+    log.info("Created PUT url for file");
 
     // Create artifact which will return artifact ID back to the frontend
     SubmissionArtifactModel artifactModel = new SubmissionArtifactModel();
@@ -98,9 +152,10 @@ public class SubmissionService {
     artifactModel.setSizeBytes(submissionRequestDto.getSizeBytes());
     artifactModel.setS3Key(generatedPutUrl.getS3Key());
 
-
+    log.info("Successfully created file artifact");
     submissionArtifactRepository.save(artifactModel);
 
+    log.info(generatedPutUrl.getUploadUrl());
     return toUploadSubmissionResponseDto(
             artifactModel.getArtifactId(),
             generatedPutUrl.getS3Key(),
@@ -109,7 +164,7 @@ public class SubmissionService {
   }
 
   @Transactional
-  public TurnInSubmissionResponseDto updateSubmissionTurnIn(
+  public TurnInSubmissionResponseDto turnInSubmission(
           String submissionId,
           TurnInSubmissionRequestDto submissionRequestDto
   ){
@@ -127,12 +182,16 @@ public class SubmissionService {
         return NotFoundException.of("Submission", submissionId);
       });
 
-    SubmissionArtifactModel artifactModel = resolveOrCreateArtifact(submissionRequestDto);
+    SubmissionArtifactModel artifactModel = resolveOrCreateArtifact(
+            submissionId,
+            submissionRequestDto
+    );
+
     setArtifactDetails(artifactModel, submissionRequestDto, submissionId);
 
     // set submission details
     submission.setStatus(Status.submitted);
-    submission.setSubmittedAt(LocalDateTime.now());
+    submission.setSubmittedAt(Instant.now());
 
     submissionRepository.save(submission);
     log.info("Successfully updated submission status to SUBMITTED");
@@ -141,15 +200,28 @@ public class SubmissionService {
     log.info("Successfully saved artifact model with ID {}",
             submissionRequestDto.getArtifactId());
 
+    String presignedUrl = null;
+
+    if (artifactModel.getKind().equals(SubmissionKind.file)) {
+
+      log.info("Generating GET url for artifact: {} to return to Frontend",
+              artifactModel.getArtifactName());
+
+      String bucketName = s3Service.resolveBucketForFile(
+              retrieveFileExtension(artifactModel.getArtifactName())
+      );
+
+      presignedUrl = s3Service.createPresignedGetUrl(
+              bucketName,
+              artifactModel.getS3Key()
+      ).getUploadUrl();
+    }
+
     return toTurnInResponseDto(
             submission.getSubmissionCompositeId().getSubmissionId(),
             submission.getStatus(),
             submission.getSubmittedAt(),
-            toArtifactDto(
-                    artifactModel.getKind(),
-                    artifactModel.getArtifactName(),
-                    artifactModel.getSizeBytes()
-            )
+            toArtifactDto(artifactModel, presignedUrl) // Will be the S3 URL for files, or null for text/links
     );
   }
 
@@ -158,16 +230,17 @@ public class SubmissionService {
 
     log.info("Unsubmit method service starting..");
 
-    if (submissionId.isEmpty()){
+    if (submissionId.isBlank()){
       log.error("Submission not found with: {}", submissionId);
       throw NotFoundException.of("Submission", submissionId);
     }
 
-    SubmissionModel submission = submissionRepository.findById(submissionId)
+    SubmissionModel submission = submissionRepository.findBySubmissionId(submissionId)
       .orElseThrow(() -> {
         log.error("Submission not found with ID {}", submissionId);
         return NotFoundException.of("Submission", submissionId);
-      });
+      }
+    );
 
     // cannot proceed if submission status is assigned or returned
     if (!submission.getStatus().equals(Status.submitted)){
@@ -176,7 +249,11 @@ public class SubmissionService {
               .formatted( submission.getStatus()));
     }
 
+    deleteSubmissionArtifact(submissionId);
+
     submission.setStatus(Status.assigned);
+    submission.setSubmittedAt(null);
+
     submissionRepository.save(submission);
     log.info("Successfully reverted submission back to {} status!",
             submission.getStatus());
@@ -185,11 +262,21 @@ public class SubmissionService {
 
   }
 
-  private SubmissionArtifactModel resolveOrCreateArtifact(TurnInSubmissionRequestDto dto) {
+  private SubmissionArtifactModel resolveOrCreateArtifact(
+          String submissionId,
+          TurnInSubmissionRequestDto dto) {
+
+    Optional<SubmissionArtifactModel> existingArtifact =
+            submissionArtifactRepository.findBySubmissionId(submissionId);
+
+    if (existingArtifact.isPresent()){
+      log.info("Found existing artifact");
+      return existingArtifact.get();
+    }
 
     if (dto.getKind().equals(SubmissionKind.file)) {
 
-      if (dto.getArtifactId() == null || dto.getArtifactId().isEmpty()){
+      if (dto.getArtifactId() == null || dto.getArtifactId().isBlank()){
         log.error("Artifact ID is required for file submissions!");
         throw NotFoundException.of("Submission Artifact", "Missing Artifact ID");
       }
@@ -203,13 +290,48 @@ public class SubmissionService {
 
     // Create new artifact model for text or link submissions
     log.info("Creating new artifact ID for {} submission", dto.getKind());
-    return new SubmissionArtifactModel();
+
+    SubmissionArtifactModel newArtifact = new SubmissionArtifactModel();
+    newArtifact.setSubmissionId(submissionId);
+    return newArtifact;
+  }
+
+  private void deleteSubmissionArtifact(String submissionId){
+
+    submissionArtifactRepository.findBySubmissionId(submissionId).ifPresent(artifact -> {
+
+      if (!artifact.getKind().equals(SubmissionKind.file)){
+        // Delete the artifact database record
+        submissionArtifactRepository.delete(artifact);
+      } else {
+
+        try {
+
+          String bucketName = s3Service.resolveBucketForFile(
+                  retrieveFileExtension(artifact.getArtifactName())
+          );
+          s3Service.deleteFileFromBucket(bucketName, artifact.getS3Key());
+
+          log.info("Deleted artifact file from S3: {}", artifact.getS3Key());
+
+        } catch (Exception e) {
+          log.error("Failed to delete file from S3 during unsubmit: {}", e.getMessage());
+          throw new RuntimeException("Failed to clean up storage", e);
+        }
+        // Delete the artifact database record
+        submissionArtifactRepository.delete(artifact);
+      }
+
+      log.info("Deleted submission artifact record from database for ID: {}", submissionId);
+    });
+
   }
 
   private void setArtifactDetails(
           SubmissionArtifactModel artifact,
           TurnInSubmissionRequestDto dto,
-          String submissionId) {
+          String submissionId
+  ) {
 
     log.info("Setting artifact details for artifact: {}", artifact.getArtifactId());
     artifact.setSubmissionId(submissionId);
@@ -240,13 +362,13 @@ public class SubmissionService {
   }
 
   private UploadSubmissionResponseDto toUploadSubmissionResponseDto(
-          String artifactId, String s3Key, PresignedS3UrlDto generatedUrl){
+          String artifactId, String s3Key, PresignedS3UrlDto generatedPutUrl){
 
     UploadSubmissionResponseDto responseDto = new UploadSubmissionResponseDto();
 
     responseDto.setArtifactId(artifactId);
     responseDto.setS3Key(s3Key);
-    responseDto.setSignedUrl(generatedUrl);
+    responseDto.setSignedUrl(generatedPutUrl);
     responseDto.setMessage("Generated Artifact ID");
 
     log.info("Upload Submission Request DTO generated!");
@@ -258,7 +380,7 @@ public class SubmissionService {
   private TurnInSubmissionResponseDto toTurnInResponseDto(
       String submissionId,
       Status status,
-      LocalDateTime submittedAt,
+      Instant submittedAt,
       ArtifactDto artifact
   ){
 
@@ -290,15 +412,23 @@ public class SubmissionService {
   }
 
   private ArtifactDto toArtifactDto(
-          SubmissionKind kind,
-          String filename,
-          Long sizeBytes
+          SubmissionArtifactModel artifactModel,
+          String presignedUrl
   ){
     ArtifactDto artifactDto = new ArtifactDto();
 
+    SubmissionKind kind = artifactModel.getKind();
     artifactDto.setKind(kind);
-    artifactDto.setName(filename);
-    artifactDto.setSizeBytes(sizeBytes);
+
+    if (kind.equals(SubmissionKind.file)){
+
+      artifactDto.setName(artifactModel.getArtifactName());
+      artifactDto.setSizeBytes(artifactModel.getSizeBytes());
+      artifactDto.setUrl(presignedUrl);
+
+    } else if (kind.equals(SubmissionKind.text)){
+      artifactDto.setBody(artifactModel.getBody());
+    }
 
     return artifactDto;
   }

@@ -8,11 +8,15 @@ import org.ssglobal.revalida.ssclassroom.model.AppUserModel;
 public record MeResponseDto(String id, Role role, String displayName, List<String> cohortIds) {
 
     public static MeResponseDto of(AppUserModel user, List<String> cohortIds) {
-        // names are stored encrypted and never decrypted here, so the username (1-50 chars) is the display name
+        // API spec: displayName is 1-120 characters
+        String displayName = (user.getFirstName() + " " + user.getLastName()).trim();
+        if (displayName.length() > 120) {
+            displayName = displayName.substring(0, 120);
+        }
         return new MeResponseDto(
                 user.getUserId(),
                 user.getRole(),
-                user.getUsername(),
+                displayName,
                 cohortIds);
     }
 }

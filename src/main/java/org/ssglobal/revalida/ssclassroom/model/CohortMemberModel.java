@@ -2,6 +2,7 @@ package org.ssglobal.revalida.ssclassroom.model;
 
 import java.time.Instant;
 
+import org.ssglobal.revalida.ssclassroom.dto.GradeFeedback.GradeFeedbackResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.LearnerHome.LearnerHomeResponseDto;
 
 import jakarta.persistence.*;
@@ -21,7 +22,9 @@ import lombok.*;
  * @SqlResultSetMapping + @ConstructorResult into a record).
  * SQL: SQL_Fundamentals_PostgreSQL_Standards.docx ("Coalescing: The COALESCE Function") and
  * SQL_Fundamentals_PostgreSQL_Standards [Part 2].docx ("Left Join").
- * Placing this on CohortMemberModel is a project choice; the notes do not specify which entity holds it.
+ * Also holds the L3 Grade and feedback read query (GradeFeedbackRepository): one returned submission of one learner,
+ * with its assignment, grade and first artifact. Same record-mapping pattern as above.
+ * Placing these on CohortMemberModel is a project choice; the notes do not specify which entity holds it.
  */
 @SqlResultSetMapping(
         name = "LearnerHomeResponseDtoMapping",
@@ -54,6 +57,41 @@ import lombok.*;
                 LEFT JOIN grade g ON g.submission_id = s.submission_id AND s.status = 'returned'
                 WHERE cm.user_id = :userId
                 ORDER BY a.assignment_id
+                """)
+@SqlResultSetMapping(
+        name = "GradeFeedbackResponseDtoMapping",
+        classes = @ConstructorResult(
+                targetClass = GradeFeedbackResponseDto.class,
+                columns = {
+                        @ColumnResult(name = "submission_id"),
+                        @ColumnResult(name = "assignment_id"),
+                        @ColumnResult(name = "assignment_title"),
+                        @ColumnResult(name = "assignment_points", type = Integer.class),
+                        @ColumnResult(name = "submitted_at", type = Instant.class),
+                        @ColumnResult(name = "grade_points", type = Integer.class),
+                        @ColumnResult(name = "private_comment"),
+                        @ColumnResult(name = "returned_at", type = Instant.class),
+                        @ColumnResult(name = "artifact_kind"),
+                        @ColumnResult(name = "artifact_name"),
+                        @ColumnResult(name = "artifact_body"),
+                        @ColumnResult(name = "artifact_s3_key")   // lands in artifactDownloadUrl; the service swaps it for a signed URL
+                }))
+@NamedNativeQuery(
+        name = "GradeFeedback.findRow",
+        resultSetMapping = "GradeFeedbackResponseDtoMapping",
+        query = """
+                SELECT s.submission_id, a.assignment_id, a.title AS assignment_title, a.points AS assignment_points,
+                       s.submitted_at, g.points AS grade_points, g.private_comment, g.returned_at,
+                       sa.kind AS artifact_kind, sa.name AS artifact_name, sa.body AS artifact_body,
+                       sa.s3_key AS artifact_s3_key
+                FROM submission s
+                JOIN assignment a ON a.assignment_id = s.assignment_id
+                JOIN grade g ON g.submission_id = s.submission_id
+                LEFT JOIN LATERAL (SELECT kind, name, body, s3_key
+                                   FROM submission_artifact
+                                   WHERE submission_id = s.submission_id
+                                   LIMIT 1) sa ON TRUE
+                WHERE s.submission_id = :submissionId AND s.learner_id = :userId AND s.status = 'returned'
                 """)
 @Entity
 @Table(name = "cohort_member",

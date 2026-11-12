@@ -60,11 +60,14 @@ public class DriveSubmissionProcessService {
       log.info("Initiating Put request...");
       s3Client.putObject(
               PutObjectRequest.builder()
-                      .bucket(generatedPutUrl.getSignedUrl().getBucketName())
-                      .key(generatedPutUrl.getSignedUrl().getS3Key())
+                      .bucket(generatedPutUrl.getSignedUrl()
+                              .getBucketName())
+                      .key(generatedPutUrl.getSignedUrl()
+                              .getS3Key())
                       .contentType(extractedFile.getMimeType())
                       .build(),
-              RequestBody.fromInputStream(fileInputStream, extractedFile.getSize())
+              RequestBody.fromInputStream(fileInputStream,
+                      extractedFile.getSize())
       );
       log.info("Successfully uploaded object to bucket!");
 

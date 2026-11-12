@@ -40,14 +40,7 @@ public class SubmissionService {
   private final SubmissionArtifactRepository submissionArtifactRepository;
   private final S3Service s3Service;
 
-  private final int MAX_FILE_SIZE = 52428800;
-
-  // lookup submissions by assignmentId
-  @Transactional(readOnly = true)
-  public List<SubmissionModel> fetchSubmissionsByAssignmentId(String assignmentId){
-    return submissionRepository.findByAssignmentModel_AssignmentId(assignmentId)
-            .orElseThrow(() -> new EntityNotFoundException(""));
-  }
+  private final Long MAX_FILE_SIZE = 10485760L;
 
   @Transactional(readOnly = true)
   public SubmissionDetailDto fetchSubmissionBySubmissionId(String submissionId){
@@ -59,7 +52,8 @@ public class SubmissionService {
       throw new NotFoundException("Submisison ID is null!");
     }
 
-    SubmissionModel submissionModel = submissionRepository.findBySubmissionId(submissionId)
+    SubmissionModel submissionModel = submissionRepository
+            .findBySubmissionId(submissionId)
             .orElseThrow(() -> new NotFoundException("Submission Model not found!"));
 
 
@@ -188,6 +182,8 @@ public class SubmissionService {
         return NotFoundException.of("Submission", submissionId);
       });
 
+    transitionState(submission, Status.submitted);
+
     SubmissionArtifactModel artifactModel = resolveOrCreateArtifact(
             submissionId,
             submissionRequestDto
@@ -256,6 +252,7 @@ public class SubmissionService {
     }
 
     deleteSubmissionArtifact(submissionId);
+    transitionState(submission, Status.assigned);
 
     submission.setStatus(Status.assigned);
     submission.setSubmittedAt(null);
@@ -304,7 +301,8 @@ public class SubmissionService {
 
   private void deleteSubmissionArtifact(String submissionId){
 
-    submissionArtifactRepository.findBySubmissionId(submissionId).ifPresent(artifact -> {
+    submissionArtifactRepository.findBySubmissionId(submissionId).ifPresent(
+            artifact -> {
 
       if (!artifact.getKind().equals(SubmissionKind.file)){
         // Delete the artifact database record
@@ -365,6 +363,19 @@ public class SubmissionService {
     }
 
     submissionArtifactRepository.save(artifact);
+  }
+
+  private void transitionState(SubmissionModel submissionModel, Status targetStatus) {
+
+    log.info("Updating status of submission to -> {}", targetStatus);
+    if (!isValidTransition(submissionModel.getStatus(), targetStatus)){
+      log.error("Cannot transition from {} to {}",
+              submissionModel.getStatus(), targetStatus);
+      throw new IllegalStateException("Invalid state transition");
+    }
+
+    log.info("Transition complete!");
+    submissionModel.setStatus(targetStatus);
   }
 
   private UploadSubmissionResponseDto toUploadSubmissionResponseDto(
@@ -463,5 +474,13 @@ public class SubmissionService {
       log.error("Extension type not found!");
       throw new StringIndexOutOfBoundsException("Invalid filename or extension not found!");
     }
+  }
+
+  private Boolean isValidTransition(Status currentStatus, Status targetStatus) {
+    return switch (currentStatus){
+      case submitted -> targetStatus == Status.submitted;
+      case assigned -> targetStatus == Status.assigned;
+      case returned -> false; // final state, cannot change
+    };
   }
 }

@@ -15,4 +15,6 @@ public interface CohortMemberRepository extends JpaRepository<CohortMemberModel,
     List<CohortMemberModel> findByCohortId(String cohortId);
 
     boolean existsByUserId(String userId);
+
+    boolean existsByCohortIdAndUserId(String cohortId, String userId);   // add this
 }

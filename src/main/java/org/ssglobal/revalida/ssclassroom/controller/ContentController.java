@@ -1,12 +1,11 @@
 package org.ssglobal.revalida.ssclassroom.controller;
 
-import org.springframework.web.bind.annotation.RestController;
-
 import java.net.URI;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -28,6 +28,8 @@ import org.ssglobal.revalida.ssclassroom.dto.Assignment.*;
 public class ContentController {
 
     private final AssignmentService assignmentService;
+
+    // ---------- Trainer endpoints ----------
 
     @PostMapping("/cohorts/{cohortId}/assignments")
     public ResponseEntity<AssignmentResponseDto> create(
@@ -61,5 +63,14 @@ public class ContentController {
             @PathVariable String assignmentId,
             @Valid @RequestBody PublishRequestDto request) {
         return ResponseEntity.ok(assignmentService.publish(assignmentId, request));
+    }
+
+    // ---------- Learner endpoints ----------
+
+    @GetMapping("/me/assignments/{assignmentId}")
+    public ResponseEntity<AssignmentResponseDto> myAssignment(
+            @PathVariable String assignmentId,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(assignmentService.getByIdForLearner(assignmentId, jwt.getSubject()));
     }
 }

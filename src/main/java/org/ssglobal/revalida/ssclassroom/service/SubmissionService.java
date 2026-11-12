@@ -56,7 +56,7 @@ public class SubmissionService {
 
     if (submissionId == null){
       log.error("Submission ID is null!");
-      throw new NotFoundException("Submisison ID is null!");
+      throw new NotFoundException("Submission ID is null!");
     }
 
     SubmissionModel submissionModel = submissionRepository.findBySubmissionId(submissionId)

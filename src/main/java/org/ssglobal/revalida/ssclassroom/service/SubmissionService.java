@@ -191,8 +191,6 @@ public class SubmissionService {
 
     setArtifactDetails(artifactModel, submissionRequestDto, submissionId);
 
-    // set submission details
-    submission.setStatus(Status.submitted);
     submission.setSubmittedAt(Instant.now());
 
     submissionRepository.save(submission);
@@ -254,7 +252,6 @@ public class SubmissionService {
     deleteSubmissionArtifact(submissionId);
     transitionState(submission, Status.assigned);
 
-    submission.setStatus(Status.assigned);
     submission.setSubmittedAt(null);
 
     submissionRepository.save(submission);

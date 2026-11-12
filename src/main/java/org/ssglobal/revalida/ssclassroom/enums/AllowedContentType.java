@@ -2,24 +2,30 @@ package org.ssglobal.revalida.ssclassroom.enums;
 
 
 import java.util.Arrays;
+import java.util.Set;
 
 public enum AllowedContentType {
-  PDF("application/pdf"),
-  TXT("text/plain"),
-  ZIP("application/zip"),
-  DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+  PDF(Set.of("application/pdf")),
+  TXT(Set.of("text/plain")),
+  ZIP(Set.of("application/zip", "application/x-zip-compressed")),
+  DOCX(Set.of("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
 
-  private final String mimeType;
+  private final Set<String> mimeTypes;
 
-  AllowedContentType(String mimeType) {
-    this.mimeType = mimeType;
+  AllowedContentType(Set<String> mimeTypes) {
+    this.mimeTypes = mimeTypes;
   }
 
-  // Helper method
-  public static boolean contains(String mimeType) {
-    if (mimeType == null) return false;
-    return Arrays.stream(values())
-            .anyMatch(type ->
-                    type.mimeType.equalsIgnoreCase(mimeType));
+  public static boolean contains(String contentType) {
+    if (contentType == null) return false;
+
+    String base = contentType.split(";")[0].trim().toLowerCase();
+
+    for (AllowedContentType type : values()) {
+      if (type.mimeTypes.contains(base)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

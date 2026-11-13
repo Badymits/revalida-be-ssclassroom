@@ -54,14 +54,14 @@ public class ContentController {
     @PatchMapping("/assignments/{assignmentId}")
     public ResponseEntity<AssignmentResponseDto> update(
             @PathVariable String assignmentId,
-            @Valid @RequestBody AssignmentUpdateRequestDto request) {
+            @RequestBody AssignmentUpdateRequestDto request) {   // @Valid removed for partial edits
         return ResponseEntity.ok(assignmentService.update(assignmentId, request));
     }
 
     @PostMapping("/assignments/{assignmentId}/publish")
     public ResponseEntity<PublishResponseDto> publish(
             @PathVariable String assignmentId,
-            @Valid @RequestBody PublishRequestDto request) {
+            @RequestBody(required = false) PublishRequestDto request) {   // body now optional
         return ResponseEntity.ok(assignmentService.publish(assignmentId, request));
     }
 

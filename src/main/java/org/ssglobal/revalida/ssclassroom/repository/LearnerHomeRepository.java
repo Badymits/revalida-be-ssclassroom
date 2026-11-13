@@ -23,4 +23,16 @@ public interface LearnerHomeRepository extends JpaRepository<CohortMemberModel, 
 
     @Query(name = "LearnerHome.findRows", nativeQuery = true)
     List<LearnerHomeResponseDto> findRows(@Param("userId") String userId);
+
+    /** Published assignments in the learner's cohort(s) that have no submission row for them yet (late joiners). */
+    @Query(value = """
+            SELECT a.assignment_id
+            FROM cohort_member cm
+            JOIN assignment a ON a.cohort_id = cm.cohort_id AND a.status = 'published'
+            WHERE cm.user_id = :userId
+              AND NOT EXISTS (
+                  SELECT 1 FROM submission s
+                  WHERE s.assignment_id = a.assignment_id AND s.learner_id = cm.user_id)
+            """, nativeQuery = true)
+    List<String> findPublishedAssignmentIdsWithoutSubmission(@Param("userId") String userId);
 }

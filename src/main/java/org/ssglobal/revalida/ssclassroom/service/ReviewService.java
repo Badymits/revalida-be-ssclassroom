@@ -27,16 +27,13 @@ public class ReviewService {
     private final GradeRepository gradeRepository;
     private final S3Service s3Service;
     private final NameEncryptionService nameEncryptionService;
-    private final String bucketName;
 
     @Autowired
     public ReviewService(GradeRepository gradeRepository, S3Service s3Service,
-            NameEncryptionService nameEncryptionService,
-            @Value("${aws.s3.bucket-name}") String bucketName) {
+            NameEncryptionService nameEncryptionService) {
         this.gradeRepository = gradeRepository;
         this.s3Service = s3Service;
         this.nameEncryptionService = nameEncryptionService;
-        this.bucketName = bucketName;
     }
 
     public RosterResponseDto getRoster(String assignmentId, String status, int limit, String cursor) {
@@ -99,11 +96,17 @@ public class ReviewService {
     }
 
     private SubmissionDetailDto.Artifact toArtifact(ArtifactRow artifact) {
-        String downloadUrl = artifact.getS3Key() == null
-                ? null
-                : s3Service.createPresignedGetUrl(bucketName, artifact.getS3Key()).getUploadUrl();
+        String downloadUrl = null;
+        if (artifact.getS3Key() != null) {
+            String bucket = s3Service.resolveBucketForFile(fileExtension(artifact.getName()));
+            downloadUrl = s3Service.createPresignedGetUrl(bucket, artifact.getS3Key()).getUploadUrl();
+        }
 
         return new SubmissionDetailDto.Artifact(artifact.getKind(), artifact.getName(),
                 artifact.getBody(), downloadUrl);
+    }
+
+    private String fileExtension(String fileName) {
+        return fileName.substring(fileName.lastIndexOf('.') + 1);
     }
 }

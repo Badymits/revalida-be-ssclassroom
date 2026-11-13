@@ -89,6 +89,11 @@ public class AssignmentService {
                     "Only draft assignments can be published (current: " + a.getStatus() + ")");
         }
 
+        // Instructions are required before publishing
+        if (a.getInstructions() == null || a.getInstructions().isBlank()) {
+            throw new BadRequestException("Add instructions before publishing");
+        }
+
         a.setStatus(AssignmentStatus.published);
 
         // Fan-out: one "assigned" submission per learner in the cohort (trainers skipped).

@@ -1,7 +1,6 @@
 package org.ssglobal.revalida.ssclassroom.service;
 
 import java.time.Instant;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -52,8 +51,4 @@ public class GradeService {
         return grade;
     }
 
-    @Transactional(readOnly = true)
-    public Optional<GradeModel> getGrade(String submissionId) {
-        return gradeRepository.findById(submissionId);
-    }
 }

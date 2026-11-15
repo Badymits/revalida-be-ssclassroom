@@ -5,13 +5,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ssglobal.revalida.ssclassroom.dto.ReturnResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.RosterResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.SubmissionDetailDto;
-import org.ssglobal.revalida.ssclassroom.exceptions.ForbiddenException;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.ArtifactRow;
@@ -26,14 +24,11 @@ public class ReviewService {
 
     private final GradeRepository gradeRepository;
     private final S3Service s3Service;
-    private final NameEncryptionService nameEncryptionService;
 
     @Autowired
-    public ReviewService(GradeRepository gradeRepository, S3Service s3Service,
-            NameEncryptionService nameEncryptionService) {
+    public ReviewService(GradeRepository gradeRepository, S3Service s3Service) {
         this.gradeRepository = gradeRepository;
         this.s3Service = s3Service;
-        this.nameEncryptionService = nameEncryptionService;
     }
 
     public RosterResponseDto getRoster(String assignmentId, String status, int limit, String cursor) {
@@ -58,7 +53,7 @@ public class ReviewService {
                 .orElseThrow(() -> NotFoundException.of("Submission", submissionId));
 
         if (!isTrainer && !submission.getLearnerId().equals(userId)) {
-            throw new ForbiddenException("You can only view your own submission");
+            throw NotFoundException.of("Submission", submissionId);
         }
 
         List<SubmissionDetailDto.Artifact> artifacts = gradeRepository.findArtifact(submissionId)
@@ -70,17 +65,18 @@ public class ReviewService {
                 .map(ReturnResponseDto.GradeDto::from)
                 .orElse(null);
 
+        String learnerLabel = submission.getFirstName() + " " + submission.getLastName();
+
         return new SubmissionDetailDto(submission.getSubmissionId(), submission.getAssignmentId(),
-                submission.getLearnerId(), submission.getStatus(), submission.getSubmittedAt(),
-                artifacts, grade);
+                submission.getLearnerId(), learnerLabel, submission.getStatus(),
+                submission.getSubmittedAt(), artifacts, grade);
     }
 
     private RosterResponseDto.Item toRosterItem(RosterRow row) {
-        String learnerLabel = nameEncryptionService.decrypt(row.getFirstName())
-                + " " + nameEncryptionService.decrypt(row.getLastName());
+        String learnerLabel = row.getFirstName() + " " + row.getLastName();
 
         return new RosterResponseDto.Item(row.getSubmissionId(), row.getLearnerId(), learnerLabel,
-                row.getStatus(), row.getPoints());
+                row.getStatus(), row.getPoints(), row.getSubmittedAt());
     }
 
     private RosterResponseDto.Summary buildSummary(String assignmentId) {

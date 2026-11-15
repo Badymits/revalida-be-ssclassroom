@@ -98,6 +98,7 @@ public class SubmissionService {
             submissionModel.getSubmissionCompositeId().getSubmissionId(),
             submissionModel.getAssignmentModel().getAssignmentId(),
             submissionModel.getSubmissionCompositeId().getLearnerId(),
+            null,
             submissionModel.getStatus().toString(),
             submissionModel.getSubmittedAt(),
             artifacts,

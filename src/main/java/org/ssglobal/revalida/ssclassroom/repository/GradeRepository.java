@@ -38,6 +38,8 @@ public interface GradeRepository extends JpaRepository<GradeModel, String> {
         String getSubmissionId();
         String getAssignmentId();
         String getLearnerId();
+        String getFirstName();
+        String getLastName();
         String getStatus();
         Instant getSubmittedAt();
     }
@@ -98,13 +100,16 @@ public interface GradeRepository extends JpaRepository<GradeModel, String> {
     List<StatusCount> countByStatus(@Param("assignmentId") String assignmentId);
 
     @Query(value = """
-            SELECT submission_id AS "submissionId",
-                   assignment_id AS "assignmentId",
-                   learner_id AS "learnerId",
-                   status AS status,
-                   submitted_at AS "submittedAt"
-            FROM submission
-            WHERE submission_id = :id
+            SELECT s.submission_id AS "submissionId",
+                   s.assignment_id AS "assignmentId",
+                   s.learner_id AS "learnerId",
+                   u.first_name AS "firstName",
+                   u.last_name AS "lastName",
+                   s.status AS status,
+                   s.submitted_at AS "submittedAt"
+            FROM submission s
+            JOIN app_user u ON u.user_id = s.learner_id
+            WHERE s.submission_id = :id
             """, nativeQuery = true)
     Optional<SubmissionRow> findSubmissionDetail(@Param("id") String submissionId);
 

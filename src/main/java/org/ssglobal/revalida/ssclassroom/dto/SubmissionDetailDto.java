@@ -9,6 +9,7 @@ public record SubmissionDetailDto(
 		String id, 
 		String assignmentId, 
 		String learnerId,
+		String learnerLabel,
         String status, 
         Instant submittedAt, 
         List<Artifact> artifacts,

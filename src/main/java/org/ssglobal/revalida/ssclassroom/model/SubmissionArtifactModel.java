@@ -4,7 +4,8 @@ package org.ssglobal.revalida.ssclassroom.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 import org.ssglobal.revalida.ssclassroom.service.PrefixedIdService;
 
 
@@ -23,7 +24,7 @@ public class SubmissionArtifactModel {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "kind", nullable = false)
-  private SubmissionKind kind;
+  private SubmissionType kind;
 
   @Column(name = "name", nullable = false)
   private String artifactName;

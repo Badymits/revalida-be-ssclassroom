@@ -16,3 +16,5 @@ aws:
       txt: txt-submissions-bucket
       zip: zip-submissions-bucket
       docx: docx-submissions-bucket
+      attachments: assignment-attachments-bucket
+      

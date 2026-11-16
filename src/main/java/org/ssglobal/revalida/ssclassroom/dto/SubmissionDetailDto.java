@@ -18,7 +18,9 @@ public record SubmissionDetailDto(
     public record Artifact(
     		String kind, 
     		String name, 
-    		String body, 
+    		String body,
+				String url,
+				Long size,
     		String downloadUrl) {
     }
 }

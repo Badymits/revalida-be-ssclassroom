@@ -2,12 +2,12 @@ package org.ssglobal.revalida.ssclassroom.dto;
 
 
 import lombok.Data;
-import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 
 @Data
 public class ArtifactDto {
 
-  private SubmissionKind kind;
+  private SubmissionType kind;
 
   // file type fields
   private String name;

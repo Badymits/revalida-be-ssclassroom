@@ -104,6 +104,6 @@ public class ReviewService {
                 : s3Service.createPresignedGetUrl(bucketName, artifact.getS3Key()).getUploadUrl();
 
         return new SubmissionDetailDto.Artifact(artifact.getKind(), artifact.getName(),
-                artifact.getBody(), downloadUrl);
+                artifact.getBody(), artifact.getUrl(), artifact.getSize(), downloadUrl);
     }
 }

@@ -10,10 +10,11 @@ import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionRe
 import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionResponseDto;
-import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 import org.ssglobal.revalida.ssclassroom.service.GoogleDrive.GoogleDriveService;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.InputStream;
@@ -29,7 +30,7 @@ public class DriveSubmissionProcessService {
 
   @Transactional
   public TurnInSubmissionResponseDto processDriveSubmission(
-          String submissionId, String driveUrl){
+          String submissionId, String driveUrl, String learnerId, String idempotencyKey){
 
     log.info("Extracting file from drive for submission: {}", submissionId);
 
@@ -38,15 +39,41 @@ public class DriveSubmissionProcessService {
     UploadSubmissionResponseDto generatedPutUrl =
             submissionService.generateS3UploadUrl(
                     submissionId,
-                    toUploadSubmissionRequest(extractedFile)
+                    learnerId,
+                    toUploadSubmissionRequest(extractedFile, driveUrl),
+                    idempotencyKey
             );
     uploadObjectToBucket(extractedFile, generatedPutUrl);
 
 
-    return submissionService.turnInSubmission(
-            submissionId,
-            toTurnInSubmissionRequest(generatedPutUrl)
-    );
+    try {
+      return submissionService.turnInSubmission(
+              submissionId,
+              learnerId,
+              idempotencyKey,
+              toTurnInSubmissionRequest(generatedPutUrl, driveUrl)
+      );
+    } catch (Exception e) {
+      log.error("Database save failed after S3 upload. Rolling back (deleting) file from S3...", e);
+
+      try {
+        String bucketName = generatedPutUrl.getSignedUrl().getBucketName();
+        String s3Key = generatedPutUrl.getS3Key();
+
+        // calling AWS to delete orphaned file
+        s3Client.deleteObject(DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(s3Key)
+                .build());
+
+        log.info("Successfully cleaned up orphaned file from S3: {}", s3Key);
+      } catch (Exception s3Ex) {
+        log.error("Critical: Failed to delete orphaned S3 file during rollback: {}", s3Ex.getMessage(), s3Ex);
+      }
+
+      // Rethrow the original exception so the transaction rolls back and the user gets their error response
+      throw e;
+    }
   }
 
   private void uploadObjectToBucket(
@@ -78,24 +105,28 @@ public class DriveSubmissionProcessService {
 
   }
 
-  private UploadSubmissionRequestDto toUploadSubmissionRequest(File extractedFile){
+  private UploadSubmissionRequestDto toUploadSubmissionRequest(
+          File extractedFile, String driveUrl){
     UploadSubmissionRequestDto requestDto = new UploadSubmissionRequestDto();
 
-    requestDto.setKind(SubmissionKind.file);
+    requestDto.setKind(SubmissionType.link);
     requestDto.setFilename(extractedFile.getName());
     requestDto.setContentType(extractedFile.getMimeType());
     requestDto.setSizeBytes(extractedFile.getSize());
+    requestDto.setDriveUrl(driveUrl);
 
     return requestDto;
   }
 
   private TurnInSubmissionRequestDto toTurnInSubmissionRequest (
-          UploadSubmissionResponseDto generatedPutUrl
+          UploadSubmissionResponseDto generatedPutUrl,
+          String driveUrl
   ){
 
     TurnInSubmissionRequestDto requestDto = new TurnInSubmissionRequestDto();
 
-    requestDto.setKind(SubmissionKind.file);
+    requestDto.setKind(SubmissionType.link);
+    requestDto.setUrl(driveUrl);
     requestDto.setS3Key(generatedPutUrl.getS3Key());
     requestDto.setArtifactId(generatedPutUrl.getArtifactId());
 

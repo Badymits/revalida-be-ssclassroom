@@ -266,13 +266,17 @@ public class SubmissionService {
     }
 
     if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+      log.info("Saving idempotency key to database...");
       IdempotencyKeyModel idempotencyRecord = new IdempotencyKeyModel();
-      // Set your composite model fields (key, userId, submissionId, etc.)
-      idempotencyRecord.getIdempotencyCompositeModel().setIdemKey(idempotencyKey);
-      idempotencyRecord.getIdempotencyCompositeModel().setUserId(learnerId);
-      idempotencyRecord.getIdempotencyCompositeModel().setSubmissionId(submissionId);
+      IdempotencyCompositeModel compositeModel = new IdempotencyCompositeModel();
 
+      compositeModel.setIdemKey(idempotencyKey);
+      compositeModel.setUserId(learnerId);
+      compositeModel.setSubmissionId(submissionId);
+
+      idempotencyRecord.setIdempotencyCompositeModel(compositeModel);
       idempotencyRecord.setCreatedAt(Instant.now());
+
       idempotencyKeyRepository.save(idempotencyRecord);
     }
 
@@ -301,7 +305,6 @@ public class SubmissionService {
       }
     );
 
-    validateLearnerOwnership(submission, learnerId);
 
     // cannot proceed if submission status is assigned or returned
     if (!submission.getStatus().equals(Status.submitted)){
@@ -310,6 +313,7 @@ public class SubmissionService {
               .formatted( submission.getStatus()));
     }
 
+    validateLearnerOwnership(submission, learnerId);
     deleteSubmissionArtifact(submissionId);
     transitionState(submission, Status.assigned);
 

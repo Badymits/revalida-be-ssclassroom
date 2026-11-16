@@ -9,6 +9,5 @@ public class UploadSubmissionResponseDto {
   private String artifactId;
   private String s3Key;
   private PresignedS3UrlDto signedUrl;
-  private String message;
 
 }

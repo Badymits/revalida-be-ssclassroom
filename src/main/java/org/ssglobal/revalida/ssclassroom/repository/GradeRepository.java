@@ -48,6 +48,8 @@ public interface GradeRepository extends JpaRepository<GradeModel, String> {
         String getKind();
         String getName();
         String getBody();
+        String getUrl();
+        Long getSize();
         String getS3Key();
     }
 

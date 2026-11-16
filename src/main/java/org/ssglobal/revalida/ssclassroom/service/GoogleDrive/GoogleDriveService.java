@@ -8,7 +8,8 @@ import com.google.api.services.drive.model.FileList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
+import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
+import org.ssglobal.revalida.ssclassroom.exceptions.ApiException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +25,9 @@ public class GoogleDriveService {
   public File extractFile(String driveUrl) {
     log.info("Extract files from Google Drive...");
     if (driveUrl == null || driveUrl.isBlank()){
-      throw new IllegalArgumentException("Drive URL cannot be null or empty.");
+      throw new ApiException(
+              ErrorCode.NOT_FOUND,
+              "Drive URL cannot be null or empty.");
     }
 
     try {
@@ -32,16 +35,37 @@ public class GoogleDriveService {
       // can only handle 1 file
       if (driveUrl.contains("/folders/")){
         String folderId = extractId(driveUrl, "/folders/");
-        return listFilesInFolder(folderId).stream()
+        List<File> files = listFilesInFolder(folderId);
+
+        if (files.isEmpty()) {
+          throw new ApiException(
+                  ErrorCode.NOT_FOUND,
+                  "The Google Drive folder is empty or has restricted access. Please check your google drive link."
+          );
+        }
+
+        return files.stream()
                 .findFirst()
                 .orElseThrow(() ->
-                        new NotFoundException("The Google Drive folder is empty."));
+                        new ApiException(ErrorCode.NOT_FOUND,
+                                "The Google Drive folder is empty."));
       }
 
       // Handles link if user shares direct link of file
-      if (driveUrl.contains("/file/d/")) {
-        String fileId = extractId(driveUrl, "/file/d/");
-        return getSingleFile(fileId);
+      if (driveUrl.contains("/file/d/") || driveUrl.contains("/document/d/")) {
+
+        String delimiter = driveUrl.contains("/file/d/") ? "/file/d/"
+                : driveUrl.contains("/document/d/") ? "/document/d/"
+                : null;
+
+        if (delimiter != null) {
+          return getSingleFile(extractId(driveUrl, delimiter));
+        }
+
+        throw new ApiException(
+                ErrorCode.FORBIDDEN,
+                "File type is invalid. Please make sure it is Txt, Pdf, Zip, or Docx!"
+                );
       }
 
       throw new IllegalArgumentException("Invalid Google Drive URL format.");
@@ -53,21 +77,23 @@ public class GoogleDriveService {
               ex.getDetails().getMessage()
       );
 
-      if (ex.getStatusCode() == 404) {
-        throw NotFoundException.of(
-                "Google Drive File/Folder",
-                "Resource not found or does not exist."
+      if (ex.getStatusCode() == 403 || ex.getStatusCode() == 404) {
+        throw new ApiException(
+                ErrorCode.FORBIDDEN,
+                "The Google Drive folder or file is set to private. " +
+                        "Please change the link sharing settings to 'Anyone with the link can view'."
         );
-      } else if (ex.getStatusCode() == 403) {
-        throw new RuntimeException("Access denied. Ensure the Google Drive file " +
-                "or folder is shared with the application credentials.");
       }
 
       throw new RuntimeException("Google Drive API failed: " + ex.getDetails().getMessage(), ex);
 
-    }catch (Exception ex){
+    } catch (ApiException e) {
+      throw e;
+    } catch (Exception ex){
       log.error("Failed to extract files from Google Drive URL: {}", driveUrl, ex);
-      throw new RuntimeException("Google Drive extraction failed: " + ex.getMessage(), ex);
+      throw new ApiException(
+              ErrorCode.INTERNAL_ERROR,
+              "Failed to extract files from Google Drive URL " + ex.getMessage());
     }
 
   }
@@ -81,7 +107,9 @@ public class GoogleDriveService {
 
     if (fileId == null || fileId.isBlank()){
       log.error("FileID is null. Cannot Proceed with filestream method");
-      throw new NotFoundException("fileid doesnt exist!");
+      throw new ApiException(
+              ErrorCode.NOT_FOUND,
+              "fileid doesnt exist!");
     }
 
     try {
@@ -114,7 +142,10 @@ public class GoogleDriveService {
 
     // Guard clause: enforce single file limit
     if (files.size() > 1) {
-      throw new IllegalArgumentException("The provided Google Drive folder contains multiple files. Please submit a folder with only 1 file.");
+      throw new ApiException(
+              ErrorCode.PAYLOAD_TOO_LARGE,
+              "The provided Google Drive folder " +
+              "contains multiple files. Please submit a folder with only 1 file.");
     }
 
     return files;

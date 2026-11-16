@@ -11,6 +11,7 @@ import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRe
 import org.ssglobal.revalida.ssclassroom.enums.ErrorCode;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 import org.ssglobal.revalida.ssclassroom.exceptions.InvalidFileException;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.exceptions.PayloadTooLargeException;
@@ -43,7 +44,7 @@ public class SubmissionServiceTest {
 
     PayloadTooLargeException exception = assertThrows(
             PayloadTooLargeException.class,
-            () -> submissionService.generateS3UploadUrl("", requestDto),
+            () -> submissionService.generateS3UploadUrl("", "", requestDto, ""),
             "File size too large!"
     );
 
@@ -57,19 +58,19 @@ public class SubmissionServiceTest {
     TurnInSubmissionRequestDto dto = new TurnInSubmissionRequestDto();
 
     dto.setArtifactId("artifact_001");
-    dto.setKind(SubmissionKind.file);
+    dto.setKind(SubmissionType.file);
 
     SubmissionModel model = new SubmissionModel();
     model.setStatus(Status.assigned);
 
-    when(submissionRepository.findById(submissionId)).thenReturn(Optional.of(model));
+    when(submissionRepository.findBySubmissionId(submissionId)).thenReturn(Optional.of(model));
     when(submissionRepository.save(any(SubmissionModel.class))).thenReturn(model);
 
-    submissionService.turnInSubmission(submissionId, dto);
+    submissionService.turnInSubmission(submissionId, "", "", dto);
 
     assertEquals(Status.submitted, model.getStatus());
 
-    verify(submissionRepository, times(1)).findById(submissionId);
+    verify(submissionRepository, times(1)).findBySubmissionId(submissionId);
     verify(submissionRepository, times(1)).save(model);
 
   }
@@ -78,18 +79,20 @@ public class SubmissionServiceTest {
   public void testUnsubmitSubmission_Success() {
 
     String submissionId = "sub_0001";
+    String learnerIdStub = "";
     SubmissionModel existingModel = new SubmissionModel();
 
     existingModel.setStatus(Status.submitted);
 
-    when(submissionRepository.findById(submissionId)).thenReturn(Optional.of(existingModel));
+    when(submissionRepository.findById(existingModel.getSubmissionCompositeId())).thenReturn(Optional.of(existingModel));
     when(submissionRepository.save(any(SubmissionModel.class))).thenReturn(existingModel);
 
-   submissionService.unsubmitSubmission(submissionId);
+   submissionService.unsubmitSubmission(submissionId, learnerIdStub);
 
    assertEquals(Status.assigned, existingModel.getStatus());
 
-    verify(submissionRepository, times(1)).findById(submissionId);
+    verify(submissionRepository, times(1)).findById(
+            existingModel.getSubmissionCompositeId());
     verify(submissionRepository, times(1)).save(existingModel);
   }
 
@@ -133,12 +136,13 @@ public class SubmissionServiceTest {
   @Test
   public void testUnsubmitSubmission_IdNotFound() {
     String submissionId = "sub_01234";
+    String learnerIdStub = ""; // must replace with existing learner id to continue
 
-    when(submissionRepository.findById(submissionId))
+    when(submissionRepository.findBySubmissionId(submissionId))
             .thenReturn(Optional.empty());
 
     assertThrows(NotFoundException.class,
-            () -> submissionService.unsubmitSubmission(submissionId));
+            () -> submissionService.unsubmitSubmission(submissionId, learnerIdStub));
   }
 
   @Test
@@ -147,15 +151,16 @@ public class SubmissionServiceTest {
    */
   public void testUnsubmitSubmission_InvalidState(){
     String submissionId = "sub_0001";
+    String learnerIdStub = "";
 
     SubmissionModel existingModel = new SubmissionModel();
     existingModel.setStatus(Status.returned);
 
-    when(submissionRepository.findById(submissionId))
+    when(submissionRepository.findBySubmissionId(submissionId))
             .thenReturn(Optional.of(existingModel));
 
     assertThrows(StateInvalidException.class,
-            () -> submissionService.unsubmitSubmission(submissionId));
+            () -> submissionService.unsubmitSubmission(submissionId, learnerIdStub));
   }
 
 

@@ -17,6 +17,7 @@ import org.ssglobal.revalida.ssclassroom.dto.ArtifactDto;
 import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.service.DriveSubmissionProcessService;
 
@@ -58,13 +59,18 @@ public class DriveSubmissionTest {
     mockResponse.setSubmittedAt(Instant.now());
 
     ArtifactDto artifactDto = new ArtifactDto();
-    artifactDto.setKind(SubmissionKind.file);
+    artifactDto.setKind(SubmissionType.file);
     artifactDto.setName("Use cases of Kutob at Bulong.txt");
     artifactDto.setSizeBytes(997L);
     artifactDto.setUrl("https://s3.amazonaws.com/txt-bucket/mock-presigned-url");
     mockResponse.setArtifact(artifactDto);
 
-    when(driveSubmissionService.processDriveSubmission(eq(submissionId), eq(driveUrl)))
+    when(driveSubmissionService.processDriveSubmission(
+            eq(submissionId),
+            eq(""),
+            eq(driveUrl),
+            eq("")
+            ))
             .thenReturn(mockResponse);
 
     mockMvc.perform(post("/api/v1/submissions/{submissionId}/process-files-from-drive", submissionId)
@@ -90,13 +96,18 @@ public class DriveSubmissionTest {
     mockResponse.setSubmittedAt(Instant.now());
 
     ArtifactDto artifactDto = new ArtifactDto();
-    artifactDto.setKind(SubmissionKind.file);
+    artifactDto.setKind(SubmissionType.file);
     artifactDto.setName("Use cases of Kutob at Bulong.txt");
     artifactDto.setSizeBytes(997L);
     artifactDto.setUrl("https://s3.amazonaws.com/txt-bucket/mock-presigned-url");
     mockResponse.setArtifact(artifactDto);
 
-    when(driveSubmissionService.processDriveSubmission(eq(submissionId), eq(driveUrl)))
+    when(driveSubmissionService.processDriveSubmission(
+            eq(submissionId),
+            eq(""),
+            eq(driveUrl),
+            eq("")
+            ))
             .thenReturn(mockResponse);
 
     mockMvc.perform(post("/api/v1/submissions/{submissionId}/process-files-from-drive", submissionId)
@@ -114,7 +125,12 @@ public class DriveSubmissionTest {
     String submissionId = "non-existent-sub";
     String driveUrl = "https://drive.google.com/file/d/1Pw-WI6oEWPN4PcOefSNvMKjLSse2KRRx/view?usp=drive_link";
 
-    when(driveSubmissionService.processDriveSubmission(eq(submissionId), eq(driveUrl)))
+    when(driveSubmissionService.processDriveSubmission(
+            eq(submissionId),
+            eq(""),
+            eq(driveUrl),
+            eq("")
+            ))
             .thenThrow(NotFoundException.of("Submission", submissionId));
 
     mockMvc.perform(post("/submissions/{submissionId}/process-drive", submissionId)

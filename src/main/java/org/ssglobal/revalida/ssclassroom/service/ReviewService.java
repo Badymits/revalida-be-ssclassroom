@@ -99,7 +99,7 @@ public class ReviewService {
         }
 
         return new SubmissionDetailDto.Artifact(artifact.getKind(), artifact.getName(),
-                artifact.getBody(), downloadUrl);
+                artifact.getBody(), artifact.getUrl(), artifact.getSize(), downloadUrl);
     }
 
     private String fileExtension(String fileName) {

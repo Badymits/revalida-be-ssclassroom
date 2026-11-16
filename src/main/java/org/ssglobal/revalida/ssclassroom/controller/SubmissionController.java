@@ -1,8 +1,8 @@
 package org.ssglobal.revalida.ssclassroom.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.ssglobal.revalida.ssclassroom.dto.Assignment.AssignmentResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.SubmissionDetailDto;
@@ -11,10 +11,11 @@ import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionRe
 import org.ssglobal.revalida.ssclassroom.dto.Unsubmit.UnsubmitResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionResponseDto;
-import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
 import org.ssglobal.revalida.ssclassroom.service.AssignmentService;
 import org.ssglobal.revalida.ssclassroom.service.DriveSubmissionProcessService;
 import org.ssglobal.revalida.ssclassroom.service.SubmissionService;
+
+import java.security.Principal;
 
 
 @RestController
@@ -26,14 +27,6 @@ public class SubmissionController {
   private final SubmissionService submissionService;
   private final DriveSubmissionProcessService driveSubmissionService;
 
-  // test controller to check connection to frontend
-  @GetMapping("/check-connection")
-  public ResponseEntity<String> checkConnection(){
-    return ResponseEntity.status(HttpStatusCode.valueOf(200))
-            .body("Hello From Backend!");
-  }
-
-
   @GetMapping("/assignments/{assignmentId}/my-submission")
   public ResponseEntity<AssignmentResponseDto> fetchAssignment(
           @PathVariable String assignmentId
@@ -42,51 +35,73 @@ public class SubmissionController {
   }
 
   @GetMapping("/submissions/{submissionId}/my-submission")
+  @PreAuthorize("hasRole('learner')")
   public ResponseEntity<SubmissionDetailDto> fetchUnGradedSubmission(
-          @PathVariable String submissionId
-  ){
+          @PathVariable String submissionId){
     return ResponseEntity.ok()
             .body(submissionService
                     .fetchSubmissionBySubmissionId(submissionId));
   }
 
   @PostMapping("/submissions/{submissionId}/upload-url")
+  @PreAuthorize("hasRole('learner')")
   public ResponseEntity<UploadSubmissionResponseDto> uploadFileWithS3Url(
           @PathVariable String submissionId,
-          @RequestBody UploadSubmissionRequestDto submissionRequestDto
-          ) {
-
+          @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+          @RequestBody UploadSubmissionRequestDto submissionRequestDto,
+          Principal principal) {
     return ResponseEntity.ok()
             .body(submissionService
-                    .generateS3UploadUrl(submissionId, submissionRequestDto));
+                    .generateS3UploadUrl(submissionId,
+                            principal.getName(),
+                            submissionRequestDto,
+                            idempotencyKey));
   }
 
   @PostMapping("/submissions/{submissionId}/process-files-from-drive")
+  @PreAuthorize("hasRole('learner')")
   public ResponseEntity<TurnInSubmissionResponseDto> processFileFromDrive(
           @PathVariable String submissionId,
-          @RequestBody String driveUrl
+          @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+          @RequestBody String driveUrl,
+          Principal principal
   ){
     return ResponseEntity.ok()
             .body(driveSubmissionService
-                    .processDriveSubmission(submissionId, driveUrl));
+                    .processDriveSubmission(
+                            submissionId,
+                            driveUrl,
+                            principal.getName(),
+                            idempotencyKey
+                    ));
   }
 
   @PostMapping("/submissions/{submissionId}/turn-in")
+  @PreAuthorize("hasRole('learner')")
   public ResponseEntity<TurnInSubmissionResponseDto> turnInSubmission(
           @PathVariable String submissionId,
-          @RequestBody TurnInSubmissionRequestDto submissionRequestDto
+          @RequestHeader(value = "Idempotency-Key", required = false) String
+                  idempotencyKey,
+          @RequestBody TurnInSubmissionRequestDto submissionRequestDto,
+          Principal principal
   ) {
 
     return ResponseEntity.ok()
             .body(submissionService
-                    .turnInSubmission(submissionId, submissionRequestDto));
+                    .turnInSubmission(
+                            submissionId,
+                            principal.getName(),
+                            idempotencyKey,
+                            submissionRequestDto)
+            );
   }
 
   @PostMapping("/submissions/{submissionId}/unsubmit")
+  @PreAuthorize("hasRole('learner')")
   public ResponseEntity<UnsubmitResponseDto> unsubmitSubmission(
-          @PathVariable String submissionId) {
+          @PathVariable String submissionId, Principal principal) {
     return ResponseEntity.ok()
-            .body(submissionService.unsubmitSubmission(submissionId));
+            .body(submissionService.unsubmitSubmission(submissionId, principal.getName()));
   }
 
 }

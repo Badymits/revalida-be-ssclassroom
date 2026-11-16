@@ -1,12 +1,12 @@
 package org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission;
 
 import lombok.Data;
-import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
+import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 
 @Data
 public class TurnInSubmissionRequestDto {
 
-  private SubmissionKind kind;
+  private SubmissionType kind;
   private String s3Key;
 
   // these fields can be null but one

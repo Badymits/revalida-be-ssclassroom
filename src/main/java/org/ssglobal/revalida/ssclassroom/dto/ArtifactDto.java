@@ -11,7 +11,7 @@ public class ArtifactDto {
 
   // file type fields
   private String name;
-  private Long sizeBytes;
+  private Long size;
   private String downloadUrl; // s3 bucket file
 
   // text type field

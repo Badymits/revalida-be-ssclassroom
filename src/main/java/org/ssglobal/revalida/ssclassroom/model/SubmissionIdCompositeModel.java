@@ -4,12 +4,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.Id;
 import lombok.Getter;
+import lombok.Setter;
 import org.ssglobal.revalida.ssclassroom.service.PrefixedIdService;
 
 import java.io.Serializable;
 
 
 @Getter
+@Setter // for testing
 @Embeddable
 public class SubmissionIdCompositeModel implements Serializable {
 

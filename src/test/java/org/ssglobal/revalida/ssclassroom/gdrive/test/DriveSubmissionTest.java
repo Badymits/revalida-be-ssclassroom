@@ -61,7 +61,7 @@ public class DriveSubmissionTest {
     ArtifactDto artifactDto = new ArtifactDto();
     artifactDto.setKind(SubmissionType.file);
     artifactDto.setName("Use cases of Kutob at Bulong.txt");
-    artifactDto.setSizeBytes(997L);
+    artifactDto.setSize(997L);
     artifactDto.setUrl("https://s3.amazonaws.com/txt-bucket/mock-presigned-url");
     mockResponse.setArtifact(artifactDto);
 
@@ -98,7 +98,7 @@ public class DriveSubmissionTest {
     ArtifactDto artifactDto = new ArtifactDto();
     artifactDto.setKind(SubmissionType.file);
     artifactDto.setName("Use cases of Kutob at Bulong.txt");
-    artifactDto.setSizeBytes(997L);
+    artifactDto.setSize(997L);
     artifactDto.setUrl("https://s3.amazonaws.com/txt-bucket/mock-presigned-url");
     mockResponse.setArtifact(artifactDto);
 

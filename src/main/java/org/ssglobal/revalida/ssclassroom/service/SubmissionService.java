@@ -490,7 +490,7 @@ public class SubmissionService {
     if (kind.equals(SubmissionType.file)){
 
       artifactDto.setName(artifactModel.getArtifactName());
-      artifactDto.setSizeBytes(artifactModel.getSizeBytes());
+      artifactDto.setSize(artifactModel.getSizeBytes());
       artifactDto.setDownloadUrl(presignedUrl);
 
     } else if (kind.equals(SubmissionType.text)){
@@ -498,7 +498,7 @@ public class SubmissionService {
     } else if (kind.equals(SubmissionType.link)){
 
       artifactDto.setName(artifactModel.getArtifactName());
-      artifactDto.setSizeBytes(artifactModel.getSizeBytes());
+      artifactDto.setSize(artifactModel.getSizeBytes());
       artifactDto.setDownloadUrl(presignedUrl);
       artifactDto.setUrl(artifactModel.getUrl());
     }
@@ -585,10 +585,11 @@ public class SubmissionService {
           .map(artifactModel -> {
 
             String presignedGetUrl = null;
-            String bucketName = s3Service.resolveBucketForFile(
-                    retrieveFileExtension(artifactModel.getArtifactName()));
 
             if (artifactModel.getKind().equals(SubmissionType.file)){
+
+              String bucketName = s3Service.resolveBucketForFile(
+                      retrieveFileExtension(artifactModel.getArtifactName()));
               presignedGetUrl = s3Service
                       .createPresignedGetUrl(
                               bucketName,

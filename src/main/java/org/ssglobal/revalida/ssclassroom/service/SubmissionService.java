@@ -163,8 +163,17 @@ public class SubmissionService {
       }
     );
 
+    boolean isGoogleDoc = submissionRequestDto.getContentType()!= null &&
+            submissionRequestDto.getContentType().toLowerCase().contains("application/vnd.google-apps.document");
 
-    String fileExtension = retrieveFileExtension(submissionRequestDto.getFilename());
+    String filename = submissionRequestDto.getFilename();
+
+    if (filename == null || filename.isBlank()) {
+      throw new ApiException(ErrorCode.NOT_FOUND, "Filename is required.");
+    }
+
+    // Native Google Docs default to docx without needing extension parsing
+    String fileExtension = isGoogleDoc? "docx" : retrieveFileExtension(filename);
     log.info("Retrieved file extension type: {} for file: {}",
             fileExtension, submissionRequestDto.getFilename());
 

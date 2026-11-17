@@ -14,6 +14,7 @@ import org.ssglobal.revalida.ssclassroom.enums.AssignmentStatus;
 import org.ssglobal.revalida.ssclassroom.enums.Role;
 import org.ssglobal.revalida.ssclassroom.service.PrefixedIdService;
 
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -60,6 +61,14 @@ public class AssignmentModel {
     @Column(name = "status", nullable = false, length = 10)
     @Builder.Default
     private AssignmentStatus status = AssignmentStatus.draft;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
+    private Instant createdAt = Instant.now();
+
+    /** Set when the assignment is published; null for drafts. */
+    @Column(name = "published_at")
+    private Instant publishedAt;
 
     @OneToMany(
             fetch = FetchType.LAZY,

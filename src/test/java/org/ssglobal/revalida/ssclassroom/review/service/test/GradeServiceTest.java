@@ -18,6 +18,7 @@ import org.ssglobal.revalida.ssclassroom.exceptions.BadRequestException;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.exceptions.StateInvalidException;
 import org.ssglobal.revalida.ssclassroom.model.GradeModel;
+import org.ssglobal.revalida.ssclassroom.repository.GradeDraftRepository;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.SubmissionForReturn;
 import org.ssglobal.revalida.ssclassroom.service.GradeService;
@@ -29,6 +30,7 @@ class GradeServiceTest {
     private static final String TRAINER = "usr_TRAINER";
 
     @Mock GradeRepository gradeRepository;
+    @Mock GradeDraftRepository gradeDraftRepository;
 
     GradeService gradeService;
 
@@ -37,7 +39,7 @@ class GradeServiceTest {
 
     @BeforeEach
     void setUp() {
-        gradeService = new GradeService(gradeRepository);
+        gradeService = new GradeService(gradeRepository, gradeDraftRepository);
     }
 
     private void givenSubmission(String status, int maxPoints) {
@@ -58,6 +60,7 @@ class GradeServiceTest {
         assertThat(grade.getReturnedBy()).isEqualTo(TRAINER);
         assertThat(grade.getReturnedAt()).isNotNull();
         verify(gradeRepository).save(grade);
+        verify(gradeDraftRepository).deleteById(SUBMISSION);
     }
 
     @Test
@@ -129,5 +132,6 @@ class GradeServiceTest {
         assertThatThrownBy(() -> gradeService.returnSubmission(SUBMISSION, 80, "", TRAINER))
                 .isInstanceOf(StateInvalidException.class);
         verify(gradeRepository, never()).save(any());
+        verify(gradeDraftRepository, never()).deleteById(any());
     }
 }

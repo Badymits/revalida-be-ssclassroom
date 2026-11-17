@@ -21,7 +21,9 @@ import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
 import org.ssglobal.revalida.ssclassroom.dto.RosterResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.SubmissionDetailDto;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
+import org.ssglobal.revalida.ssclassroom.model.GradeDraftModel;
 import org.ssglobal.revalida.ssclassroom.model.GradeModel;
+import org.ssglobal.revalida.ssclassroom.repository.GradeDraftRepository;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.ArtifactRow;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.RosterRow;
@@ -39,12 +41,14 @@ class ReviewServiceTest {
     private static final Instant SUBMITTED_AT = Instant.parse("2026-11-12T06:30:00Z");
 
     @Mock GradeRepository gradeRepository;
+    @Mock GradeDraftRepository gradeDraftRepository;
     @Mock S3Service s3Service;
 
     ReviewService reviewService;
 
     record TestRosterRow(String getSubmissionId, String getLearnerId, String getFirstName,
-            String getLastName, String getStatus, Integer getPoints, Instant getSubmittedAt)
+            String getLastName, String getStatus, Integer getPoints, Instant getSubmittedAt,
+            Boolean getHasDraft)
             implements RosterRow {
     }
 
@@ -56,13 +60,14 @@ class ReviewServiceTest {
             implements SubmissionRow {
     }
 
-    record TestArtifactRow(String getKind, String getName, String getBody, String getS3Key)
+    record TestArtifactRow(String getKind, String getName, String getBody, String getUrl,
+            Long getSize, String getS3Key)
             implements ArtifactRow {
     }
 
     @BeforeEach
     void setUp() {
-        reviewService = new ReviewService(gradeRepository, s3Service);
+        reviewService = new ReviewService(gradeRepository, gradeDraftRepository, s3Service);
     }
 
     private void givenSubmission() {
@@ -81,9 +86,9 @@ class ReviewServiceTest {
 
     @Test
     void rosterBuildsItemsSummaryAndNextCursor() {
-        TestRosterRow first = new TestRosterRow("sub_A", "usr_A", "Ana", "Reyes", "submitted", null, SUBMITTED_AT);
-        TestRosterRow second = new TestRosterRow("sub_B", "usr_B", "Ben", "Cruz", "returned", 90, SUBMITTED_AT);
-        TestRosterRow extra = new TestRosterRow("sub_C", "usr_C", "Cara", "Lim", "assigned", null, null);
+        TestRosterRow first = new TestRosterRow("sub_A", "usr_A", "Ana", "Reyes", "submitted", null, SUBMITTED_AT, true);
+        TestRosterRow second = new TestRosterRow("sub_B", "usr_B", "Ben", "Cruz", "returned", 90, SUBMITTED_AT, false);
+        TestRosterRow extra = new TestRosterRow("sub_C", "usr_C", "Cara", "Lim", "assigned", null, null, false);
 
         when(gradeRepository.assignmentExists(ASSIGNMENT)).thenReturn(true);
         when(gradeRepository.findRosterPage(ASSIGNMENT, null, null, 3)).thenReturn(List.of(first, second, extra));
@@ -97,7 +102,9 @@ class ReviewServiceTest {
         assertThat(roster.items()).hasSize(2);
         assertThat(roster.items().get(0).learnerLabel()).isEqualTo("Ana Reyes");
         assertThat(roster.items().get(0).submittedAt()).isEqualTo(SUBMITTED_AT);
+        assertThat(roster.items().get(0).hasDraft()).isTrue();
         assertThat(roster.items().get(1).points()).isEqualTo(90);
+        assertThat(roster.items().get(1).hasDraft()).isFalse();
         assertThat(roster.nextCursor()).isEqualTo("sub_B");
         assertThat(roster.summary().total()).isEqualTo(3);
     }
@@ -114,7 +121,7 @@ class ReviewServiceTest {
     @Test
     void submissionForTrainerHasNameDownloadLinkAndGrade() {
         givenSubmission();
-        TestArtifactRow artifact = new TestArtifactRow("file", "essay.pdf", null, "key/essay.pdf");
+        TestArtifactRow artifact = new TestArtifactRow("file", "essay.pdf", null, null, 2048L, "key/essay.pdf");
         PresignedS3UrlDto presigned = new PresignedS3UrlDto("https://s3/essay.pdf", "key/essay.pdf", "GET", "pdf-bucket", 0);
         GradeModel grade = new GradeModel(SUBMISSION, 95, "Nice", SUBMITTED_AT, "usr_TRAINER");
 
@@ -135,7 +142,7 @@ class ReviewServiceTest {
     @Test
     void submissionWithTextArtifactDoesNotCallS3() {
         givenSubmission();
-        TestArtifactRow artifact = new TestArtifactRow("text", null, "My answer", null);
+        TestArtifactRow artifact = new TestArtifactRow("text", null, "My answer", null, null, null);
 
         when(gradeRepository.findArtifact(SUBMISSION)).thenReturn(Optional.of(artifact));
         when(gradeRepository.findById(SUBMISSION)).thenReturn(Optional.empty());
@@ -146,6 +153,28 @@ class ReviewServiceTest {
                 .extracting(SubmissionDetailDto.Artifact::body)
                 .isEqualTo("My answer");
         assertThat(detail.grade()).isNull();
+        assertThat(detail.draft()).isNull();
         verify(s3Service, never()).createPresignedGetUrl(any(), any());
+        verifyNoInteractions(gradeDraftRepository);
+    }
+
+    @Test
+    void submissionForTrainerIncludesTheDraft() {
+        givenSubmission();
+        GradeDraftModel draft = new GradeDraftModel(SUBMISSION);
+        draft.setPoints(40);
+        draft.setPrivateComment("Almost there");
+        draft.setUpdatedAt(SUBMITTED_AT);
+        draft.setUpdatedBy("usr_TRAINER");
+
+        when(gradeRepository.findArtifact(SUBMISSION)).thenReturn(Optional.empty());
+        when(gradeRepository.findById(SUBMISSION)).thenReturn(Optional.empty());
+        when(gradeDraftRepository.findById(SUBMISSION)).thenReturn(Optional.of(draft));
+
+        SubmissionDetailDto detail = reviewService.getSubmission(SUBMISSION, "usr_TRAINER", true);
+
+        assertThat(detail.draft().points()).isEqualTo(40);
+        assertThat(detail.draft().privateComment()).isEqualTo("Almost there");
+        assertThat(detail.grade()).isNull();
     }
 }

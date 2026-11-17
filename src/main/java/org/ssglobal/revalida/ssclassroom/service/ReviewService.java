@@ -7,10 +7,12 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ssglobal.revalida.ssclassroom.dto.GradeDraftDto;
 import org.ssglobal.revalida.ssclassroom.dto.ReturnResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.RosterResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.SubmissionDetailDto;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
+import org.ssglobal.revalida.ssclassroom.repository.GradeDraftRepository;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.ArtifactRow;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository.RosterRow;
@@ -23,11 +25,14 @@ import org.ssglobal.revalida.ssclassroom.service.S3Bucket.S3Service;
 public class ReviewService {
 
     private final GradeRepository gradeRepository;
+    private final GradeDraftRepository gradeDraftRepository;
     private final S3Service s3Service;
 
     @Autowired
-    public ReviewService(GradeRepository gradeRepository, S3Service s3Service) {
+    public ReviewService(GradeRepository gradeRepository,
+            GradeDraftRepository gradeDraftRepository, S3Service s3Service) {
         this.gradeRepository = gradeRepository;
+        this.gradeDraftRepository = gradeDraftRepository;
         this.s3Service = s3Service;
     }
 
@@ -67,16 +72,21 @@ public class ReviewService {
 
         String learnerLabel = submission.getFirstName() + " " + submission.getLastName();
 
+        GradeDraftDto draft = isTrainer
+                ? gradeDraftRepository.findById(submissionId).map(GradeDraftDto::from).orElse(null)
+                : null;
+
         return new SubmissionDetailDto(submission.getSubmissionId(), submission.getAssignmentId(),
                 submission.getLearnerId(), learnerLabel, submission.getStatus(),
-                submission.getSubmittedAt(), artifacts, grade);
+                submission.getSubmittedAt(), artifacts, grade, draft);
     }
 
     private RosterResponseDto.Item toRosterItem(RosterRow row) {
         String learnerLabel = row.getFirstName() + " " + row.getLastName();
 
         return new RosterResponseDto.Item(row.getSubmissionId(), row.getLearnerId(), learnerLabel,
-                row.getStatus(), row.getPoints(), row.getSubmittedAt());
+                row.getStatus(), row.getPoints(), row.getSubmittedAt(),
+                Boolean.TRUE.equals(row.getHasDraft()));
     }
 
     private RosterResponseDto.Summary buildSummary(String assignmentId) {

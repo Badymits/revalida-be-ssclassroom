@@ -13,7 +13,8 @@ public record SubmissionDetailDto(
         String status, 
         Instant submittedAt, 
         List<Artifact> artifacts,
-        ReturnResponseDto.GradeDto grade) {
+        ReturnResponseDto.GradeDto grade,
+        GradeDraftDto draft) {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Artifact(

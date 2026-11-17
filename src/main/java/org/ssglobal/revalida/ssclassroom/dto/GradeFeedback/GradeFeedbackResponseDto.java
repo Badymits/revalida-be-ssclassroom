@@ -17,6 +17,7 @@ public record GradeFeedbackResponseDto(
         Integer gradePoints,
         String privateComment,
         Instant returnedAt,
+        String trainerName,         // full name of the trainer who returned the grade (grade.returned_by); null if blank
         String artifactKind,        // null when the submission has no artifact
         String artifactName,
         String artifactBody,
@@ -28,6 +29,6 @@ public record GradeFeedbackResponseDto(
      */
     public GradeFeedbackResponseDto withDownloadUrl(String url) {
         return new GradeFeedbackResponseDto(submissionId, assignmentId, assignmentTitle, assignmentPoints,
-                submittedAt, gradePoints, privateComment, returnedAt, artifactKind, artifactName, artifactBody, url);
+                submittedAt, gradePoints, privateComment, returnedAt, trainerName, artifactKind, artifactName, artifactBody, url);
     }
 }

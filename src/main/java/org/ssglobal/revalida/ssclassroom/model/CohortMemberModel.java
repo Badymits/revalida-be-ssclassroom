@@ -71,6 +71,7 @@ import lombok.*;
                         @ColumnResult(name = "grade_points", type = Integer.class),
                         @ColumnResult(name = "private_comment"),
                         @ColumnResult(name = "returned_at", type = Instant.class),
+                        @ColumnResult(name = "trainer_name"),
                         @ColumnResult(name = "artifact_kind"),
                         @ColumnResult(name = "artifact_name"),
                         @ColumnResult(name = "artifact_body"),
@@ -82,11 +83,13 @@ import lombok.*;
         query = """
                 SELECT s.submission_id, a.assignment_id, a.title AS assignment_title, a.points AS assignment_points,
                        s.submitted_at, g.points AS grade_points, g.private_comment, g.returned_at,
+                       NULLIF(TRIM(CONCAT_WS(' ', t.first_name, t.last_name)), '') AS trainer_name,
                        sa.kind AS artifact_kind, sa.name AS artifact_name, sa.body AS artifact_body,
                        sa.s3_key AS artifact_s3_key
                 FROM submission s
                 JOIN assignment a ON a.assignment_id = s.assignment_id
                 JOIN grade g ON g.submission_id = s.submission_id
+                LEFT JOIN app_user t ON t.user_id = g.returned_by
                 LEFT JOIN LATERAL (SELECT kind, name, body, s3_key
                                    FROM submission_artifact
                                    WHERE submission_id = s.submission_id

@@ -6,19 +6,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.ssglobal.revalida.ssclassroom.dto.DraftRequestDto;
+import org.ssglobal.revalida.ssclassroom.dto.GradeDraftDto;
 import org.ssglobal.revalida.ssclassroom.dto.ReturnRequestDto;
 import org.ssglobal.revalida.ssclassroom.dto.ReturnResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.RosterResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.SubmissionDetailDto;
 import org.ssglobal.revalida.ssclassroom.model.GradeModel;
+import org.ssglobal.revalida.ssclassroom.model.GradeDraftModel;
 import org.ssglobal.revalida.ssclassroom.service.GradeService;
+import org.ssglobal.revalida.ssclassroom.service.GradeDraftService;
 import org.ssglobal.revalida.ssclassroom.service.ReviewService;
 
 import jakarta.validation.Valid;
@@ -33,11 +39,14 @@ public class ReviewController {
 
     private final GradeService gradeService;
     private final ReviewService reviewService;
+    private final GradeDraftService gradeDraftService;
 
     @Autowired
-    public ReviewController(GradeService gradeService, ReviewService reviewService) {
+    public ReviewController(GradeService gradeService, ReviewService reviewService,
+            GradeDraftService gradeDraftService) {
         this.gradeService = gradeService;
         this.reviewService = reviewService;
+        this.gradeDraftService = gradeDraftService;
     }
 
     @GetMapping("/assignments/{assignmentId}/submissions")
@@ -75,5 +84,25 @@ public class ReviewController {
                 request.privateComment(), principal.getName());
 
         return ResponseEntity.ok(ReturnResponseDto.from(grade));
+    }
+
+    @PutMapping("/submissions/{submissionId}/draft")
+    @PreAuthorize("hasRole('trainer')")
+    public ResponseEntity<GradeDraftDto> saveDraft(
+            @PathVariable String submissionId,
+            @Valid @RequestBody DraftRequestDto request,
+            Principal principal) {
+
+        GradeDraftModel draft = gradeDraftService.saveDraft(submissionId, request.points(),
+                request.privateComment(), principal.getName());
+
+        return ResponseEntity.ok(GradeDraftDto.from(draft));
+    }
+
+    @DeleteMapping("/submissions/{submissionId}/draft")
+    @PreAuthorize("hasRole('trainer')")
+    public ResponseEntity<Void> deleteDraft(@PathVariable String submissionId) {
+        gradeDraftService.deleteDraft(submissionId);
+        return ResponseEntity.noContent().build();
     }
 }

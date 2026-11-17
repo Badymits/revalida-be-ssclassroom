@@ -19,6 +19,7 @@ import org.ssglobal.revalida.ssclassroom.model.IdempotencyCompositeModel;
 import org.ssglobal.revalida.ssclassroom.model.IdempotencyKeyModel;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionArtifactModel;
 import org.ssglobal.revalida.ssclassroom.model.SubmissionModel;
+import org.ssglobal.revalida.ssclassroom.repository.GradeDraftRepository;
 import org.ssglobal.revalida.ssclassroom.repository.IdempotencyKeyRepository;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionArtifactRepository;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionRepository;
@@ -40,6 +41,7 @@ public class SubmissionService {
   private final SubmissionRepository submissionRepository;
   private final SubmissionArtifactRepository submissionArtifactRepository;
   private final IdempotencyKeyRepository idempotencyKeyRepository;
+  private final GradeDraftRepository gradeDraftRepository;
 
   private final S3Service s3Service;
 
@@ -103,6 +105,7 @@ public class SubmissionService {
             submissionModel.getStatus().toString(),
             submissionModel.getSubmittedAt(),
             artifacts,
+            null,
             null
     );
   }
@@ -319,6 +322,7 @@ public class SubmissionService {
     transitionState(submission, Status.assigned);
 
     submission.setSubmittedAt(null);
+    gradeDraftRepository.deleteById(submissionId);
 
     submissionRepository.save(submission);
     log.info("Successfully reverted submission back to {} status!",

@@ -21,6 +21,7 @@ public record RosterResponseDto(
             String learnerLabel,
             String status,
             Integer points,
-            Instant submittedAt) {
+            Instant submittedAt,
+            boolean hasDraft) {
     }
 }

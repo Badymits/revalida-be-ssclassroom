@@ -1,5 +1,6 @@
 package org.ssglobal.revalida.ssclassroom.dto.Assignment;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.ssglobal.revalida.ssclassroom.enums.AssignmentStatus;
@@ -23,5 +24,7 @@ public class AssignmentResponseDto {
     private SubmissionType submissionType;
     private Integer points;
     private AssignmentStatus status;
+    private Instant createdAt;
+    private Instant publishedAt;
     private List<AttachmentResponseDto> attachments;
 }

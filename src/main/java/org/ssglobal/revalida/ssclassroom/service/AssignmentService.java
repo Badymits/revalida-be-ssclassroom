@@ -1,5 +1,7 @@
 package org.ssglobal.revalida.ssclassroom.service;
 
+import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -33,10 +35,25 @@ public class AssignmentService {
     private final CohortMemberRepository memberRepo;
     private final AssignmentAttachmentService attachmentService;
 
+    /**
+     * List order: published assignments first (the most recently published on top),
+     * then drafts (the most recently created first). If the dates are equal it falls back
+     * to the id, which is a ULID and so follows creation order.
+     */
+    private static final Comparator<AssignmentModel> NEWEST_PUBLISHED_FIRST =
+            Comparator.comparingInt((AssignmentModel a) -> a.getStatus() == AssignmentStatus.published ? 0 : 1)
+                    .thenComparing(AssignmentService::sortTime, Comparator.nullsLast(Comparator.<Instant>reverseOrder()))
+                    .thenComparing(AssignmentModel::getAssignmentId, Comparator.<String>reverseOrder());
+
+    private static Instant sortTime(AssignmentModel a) {
+        return a.getStatus() == AssignmentStatus.published ? a.getPublishedAt() : a.getCreatedAt();
+    }
+
     @Transactional(readOnly = true)
     public List<AssignmentResponseDto> getByCohort(String cohortId) {
         return assignmentRepo.findByCohort_CohortId(cohortId)
                 .stream()
+                .sorted(NEWEST_PUBLISHED_FIRST)
                 .map(a -> toResponse(a, false))
                 .toList();
     }
@@ -104,6 +121,7 @@ public class AssignmentService {
         }
 
         a.setStatus(AssignmentStatus.published);
+        a.setPublishedAt(Instant.now());
 
        
         int created = 0;
@@ -131,6 +149,7 @@ public class AssignmentService {
         return assignmentRepo
                 .findByCohort_CohortIdAndStatus(member.getCohortId(), AssignmentStatus.published)
                 .stream()
+                .sorted(NEWEST_PUBLISHED_FIRST)
                 .map(a -> toResponse(a, false))
                 .toList();
     }
@@ -163,6 +182,8 @@ public class AssignmentService {
                 .submissionType(a.getSubmissionType())
                 .points(a.getPoints())
                 .status(a.getStatus())
+                .createdAt(a.getCreatedAt())
+                .publishedAt(a.getPublishedAt())
                 .attachments(withAttachments ? attachmentService.listFor(a.getAssignmentId()) : null)
                 .build();
     }

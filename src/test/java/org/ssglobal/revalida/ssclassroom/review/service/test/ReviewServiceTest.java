@@ -56,7 +56,7 @@ class ReviewServiceTest {
             implements SubmissionRow {
     }
 
-    record TestArtifactRow(String getKind, String getName, String getBody, String getS3Key)
+    record TestArtifactRow(String getKind, String getName, String getBody, String getUrl, Long getSize, String getS3Key)
             implements ArtifactRow {
     }
 
@@ -114,7 +114,8 @@ class ReviewServiceTest {
     @Test
     void submissionForTrainerHasNameDownloadLinkAndGrade() {
         givenSubmission();
-        TestArtifactRow artifact = new TestArtifactRow("file", "essay.pdf", null, "key/essay.pdf");
+        TestArtifactRow artifact = new TestArtifactRow(
+                "file", "essay.pdf", null,"", 0L, "key/essay.pdf");
         PresignedS3UrlDto presigned = new PresignedS3UrlDto("https://s3/essay.pdf", "key/essay.pdf", "GET", "pdf-bucket", 0);
         GradeModel grade = new GradeModel(SUBMISSION, 95, "Nice", SUBMITTED_AT, "usr_TRAINER");
 
@@ -135,7 +136,8 @@ class ReviewServiceTest {
     @Test
     void submissionWithTextArtifactDoesNotCallS3() {
         givenSubmission();
-        TestArtifactRow artifact = new TestArtifactRow("text", null, "My answer", null);
+        TestArtifactRow artifact = new TestArtifactRow(
+                "text", null,  "My answer", "", 0L, null);
 
         when(gradeRepository.findArtifact(SUBMISSION)).thenReturn(Optional.of(artifact));
         when(gradeRepository.findById(SUBMISSION)).thenReturn(Optional.empty());

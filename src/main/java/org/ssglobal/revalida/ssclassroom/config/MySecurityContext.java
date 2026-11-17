@@ -63,6 +63,7 @@ public class MySecurityContext {
 						.requestMatchers(HttpMethod.POST, "/api/v1/cohorts/*/assignments").hasRole("trainer")
 						.requestMatchers(HttpMethod.PATCH, "/api/v1/assignments/*").hasRole("trainer")
 						.requestMatchers(HttpMethod.POST, "/api/v1/assignments/*/publish").hasRole("trainer")
+						.requestMatchers(HttpMethod.POST, "/api/v1/assignment-attachments/upload-url").hasRole("trainer")
 						.requestMatchers(HttpMethod.GET, "/api/v1/assignments/*/submissions").hasRole("trainer")
 						.requestMatchers(HttpMethod.POST, "/api/v1/submissions/*/return").hasRole("trainer")
 

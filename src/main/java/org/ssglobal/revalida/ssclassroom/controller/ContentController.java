@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.ssglobal.revalida.ssclassroom.dto.Publish.*;
+import org.ssglobal.revalida.ssclassroom.service.AssignmentAttachmentService;
 import org.ssglobal.revalida.ssclassroom.service.AssignmentService;
 import org.ssglobal.revalida.ssclassroom.dto.Assignment.*;
 
@@ -28,8 +29,8 @@ import org.ssglobal.revalida.ssclassroom.dto.Assignment.*;
 public class ContentController {
 
     private final AssignmentService assignmentService;
+    private final AssignmentAttachmentService attachmentService;
 
-    // ---------- Trainer endpoints ----------
 
     @PostMapping("/cohorts/{cohortId}/assignments")
     public ResponseEntity<AssignmentResponseDto> create(
@@ -54,18 +55,23 @@ public class ContentController {
     @PatchMapping("/assignments/{assignmentId}")
     public ResponseEntity<AssignmentResponseDto> update(
             @PathVariable String assignmentId,
-            @RequestBody AssignmentUpdateRequestDto request) {   // @Valid removed for partial edits
+            @RequestBody AssignmentUpdateRequestDto request) {  
         return ResponseEntity.ok(assignmentService.update(assignmentId, request));
     }
 
     @PostMapping("/assignments/{assignmentId}/publish")
     public ResponseEntity<PublishResponseDto> publish(
             @PathVariable String assignmentId,
-            @RequestBody(required = false) PublishRequestDto request) {   // body now optional
+            @RequestBody(required = false) PublishRequestDto request) {   
         return ResponseEntity.ok(assignmentService.publish(assignmentId, request));
     }
 
-    // ---------- Learner endpoints ----------
+    @PostMapping("/assignment-attachments/upload-url")
+    public ResponseEntity<AttachmentUploadResponseDto> attachmentUploadUrl(
+            @RequestBody AttachmentUploadRequestDto request) {
+        return ResponseEntity.ok(attachmentService.createUploadUrl(request));
+    }
+
 
     @GetMapping("/me/assignments/{assignmentId}")
     public ResponseEntity<AssignmentResponseDto> myAssignment(

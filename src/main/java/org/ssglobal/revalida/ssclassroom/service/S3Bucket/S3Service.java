@@ -40,6 +40,10 @@ public class S3Service {
     @Value("${aws.s3.buckets.docx}")
     private String awsDocxBucket;
 
+    // trainer attachments (images + files shown with an assignment's instructions)
+    @Value("${aws.s3.buckets.attachments}")
+    private String awsAttachmentsBucket;
+
     @Autowired
     public S3Service(S3Presigner s3Presigner, S3Client s3Client){
         this.s3Presigner = s3Presigner;
@@ -157,6 +161,68 @@ public class S3Service {
         log.error("Exception Occurred: {}", e.getMessage());
         throw new RuntimeException(e);
       }
+    }
+
+    // ---------- assignment attachments (trainer side) ----------
+
+    /**
+     * Presigned PUT for an instruction attachment. The size is part of the signature, so S3
+     * rejects an upload whose Content-Length differs from the size that was validated.
+     */
+    public PresignedS3UrlDto createAttachmentPutUrl(String originalFileName, String contentType, long sizeBytes) {
+        String s3Key = "att/%s/%s".formatted(UUID.randomUUID(), sanitizeFileName(originalFileName));
+
+        PutObjectRequest objectRequest = PutObjectRequest.builder()
+                .bucket(awsAttachmentsBucket)
+                .key(s3Key)
+                .contentType(contentType)
+                .contentLength(sizeBytes)
+                .build();
+
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(10))
+                .putObjectRequest(objectRequest)
+                .build();
+
+        PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(presignRequest);
+
+        return new PresignedS3UrlDto(
+                presigned.url().toExternalForm(),
+                s3Key,
+                "PUT",
+                awsAttachmentsBucket,
+                (int) presigned.expiration().getEpochSecond()
+        );
+    }
+
+    /** Presigned GET for showing/downloading an attachment. Valid for an hour so an open page keeps working. */
+    public String createAttachmentGetUrl(String s3Key) {
+        GetObjectRequest objectRequest = GetObjectRequest.builder()
+                .bucket(awsAttachmentsBucket)
+                .key(s3Key)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(60))
+                .getObjectRequest(objectRequest)
+                .build();
+
+        return s3Presigner.presignGetObject(presignRequest).url().toExternalForm();
+    }
+
+    public void deleteAttachmentObject(String s3Key) {
+        deleteFileFromBucket(awsAttachmentsBucket, s3Key);
+    }
+
+    private String sanitizeFileName(String name) {
+        String cleaned = name == null ? "" : name.replaceAll("[^A-Za-z0-9._-]", "_");
+        if (cleaned.length() > 100) {
+            int dot = cleaned.lastIndexOf('.');
+            String ext = dot >= 0 ? cleaned.substring(dot) : "";
+            if (ext.length() > 10) ext = "";
+            cleaned = cleaned.substring(0, 100 - ext.length()) + ext;
+        }
+        return cleaned.isBlank() ? "file" : cleaned;
     }
 
     public void deleteFileFromBucket(String bucketName, String s3Key){

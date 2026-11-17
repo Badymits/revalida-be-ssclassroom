@@ -1,5 +1,7 @@
 package org.ssglobal.revalida.ssclassroom.dto.Assignment;
 
+import java.util.List;
+
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 
 import lombok.AllArgsConstructor;
@@ -14,4 +16,5 @@ public class AssignmentCreateRequestDto {
     private String instructions;
     private SubmissionType submissionType;
     private Integer points;
+    private List<AttachmentRequestDto> attachments;
 }

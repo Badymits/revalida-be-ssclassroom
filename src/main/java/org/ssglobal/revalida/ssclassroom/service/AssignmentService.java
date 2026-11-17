@@ -31,20 +31,19 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepo;
     private final CohortRepository cohortRepo;
     private final CohortMemberRepository memberRepo;
-
-    // ---------- Trainer side (includes drafts) ----------
+    private final AssignmentAttachmentService attachmentService;
 
     @Transactional(readOnly = true)
     public List<AssignmentResponseDto> getByCohort(String cohortId) {
         return assignmentRepo.findByCohort_CohortId(cohortId)
                 .stream()
-                .map(this::toResponse)
+                .map(a -> toResponse(a, false))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public AssignmentResponseDto getById(String id) {
-        return toResponse(find(id));
+        return toResponse(find(id), true);
     }
 
     @Transactional
@@ -60,13 +59,20 @@ public class AssignmentService {
                 .points(req.getPoints() != null ? req.getPoints() : 100)
                 .build();
 
-        return toResponse(assignmentRepo.save(a));
+        AssignmentModel saved = assignmentRepo.save(a);
+
+        if (req.getAttachments() != null) {
+            attachmentService.replaceAll(saved.getAssignmentId(), req.getAttachments());
+        }
+
+        return toResponse(saved, true);
     }
 
     @Transactional
     public AssignmentResponseDto update(String id, AssignmentUpdateRequestDto req) {
         if (req.getTitle() == null && req.getInstructions() == null
-                && req.getSubmissionType() == null && req.getPoints() == null) {
+                && req.getSubmissionType() == null && req.getPoints() == null
+                && req.getAttachments() == null) {
             throw new BadRequestException("No fields to update");
         }
 
@@ -77,7 +83,11 @@ public class AssignmentService {
         if (req.getSubmissionType() != null) a.setSubmissionType(req.getSubmissionType());
         if (req.getPoints() != null)         a.setPoints(req.getPoints());
 
-        return toResponse(a);
+        if (req.getAttachments() != null) {
+            attachmentService.replaceAll(a.getAssignmentId(), req.getAttachments());
+        }
+
+        return toResponse(a, true);
     }
 
     @Transactional
@@ -89,15 +99,13 @@ public class AssignmentService {
                     "Only draft assignments can be published (current: " + a.getStatus() + ")");
         }
 
-        // Instructions are required before publishing
         if (a.getInstructions() == null || a.getInstructions().isBlank()) {
             throw new BadRequestException("Add instructions before publishing");
         }
 
         a.setStatus(AssignmentStatus.published);
 
-        // Fan-out: one "assigned" submission per learner in the cohort (trainers skipped).
-        // Same transaction as the status change, so it is all-or-nothing.
+       
         int created = 0;
         for (String learnerId : assignmentRepo.findLearnerIdsInCohort(a.getCohort().getCohortId())) {
             String submissionId = "sub_" + UlidCreator.getMonotonicUlid();
@@ -112,7 +120,6 @@ public class AssignmentService {
                 .build();
     }
 
-    // ---------- Learner side (published only, own cohort only) ----------
 
     @Transactional(readOnly = true)
     public List<AssignmentResponseDto> getMyPublishedAssignments(String userId) {
@@ -124,7 +131,7 @@ public class AssignmentService {
         return assignmentRepo
                 .findByCohort_CohortIdAndStatus(member.getCohortId(), AssignmentStatus.published)
                 .stream()
-                .map(this::toResponse)
+                .map(a -> toResponse(a, false))
                 .toList();
     }
 
@@ -135,21 +142,19 @@ public class AssignmentService {
         boolean isMember = memberRepo.existsByCohortIdAndUserId(
                 a.getCohort().getCohortId(), userId);
 
-        // same 404 for drafts and other cohorts, so hidden work isn't revealed
         if (a.getStatus() != AssignmentStatus.published || !isMember) {
             throw new NotFoundException("Assignment not found: " + id);
         }
-        return toResponse(a);
+        return toResponse(a, true);
     }
 
-    // ---------- helpers ----------
 
     private AssignmentModel find(String id) {
         return assignmentRepo.findById(id)
                 .orElseThrow(() -> new NotFoundException("Assignment not found: " + id));
     }
 
-    private AssignmentResponseDto toResponse(AssignmentModel a) {
+    private AssignmentResponseDto toResponse(AssignmentModel a, boolean withAttachments) {
         return AssignmentResponseDto.builder()
                 .id(a.getAssignmentId())
                 .cohortId(a.getCohort().getCohortId())
@@ -158,6 +163,7 @@ public class AssignmentService {
                 .submissionType(a.getSubmissionType())
                 .points(a.getPoints())
                 .status(a.getStatus())
+                .attachments(withAttachments ? attachmentService.listFor(a.getAssignmentId()) : null)
                 .build();
     }
 }

@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CORSConfiguration;
 import software.amazon.awssdk.services.s3.model.CORSRule;
+import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.PutBucketCorsRequest;
 
 import java.util.Map;
@@ -42,6 +45,14 @@ public class CorsBucketConfig {
       String bucketName = entry.getValue();
       log.info("Applying CORS policy to bucket: {}", bucketName);
       try {
+        // LocalStack starts empty: create the bucket if it is not there yet
+        try {
+          s3Client.headBucket(HeadBucketRequest.builder().bucket(bucketName).build());
+        } catch (NoSuchBucketException missing) {
+          s3Client.createBucket(CreateBucketRequest.builder().bucket(bucketName).build());
+          log.info("Created missing S3 bucket {}", bucketName);
+        }
+
         PutBucketCorsRequest corsRequest = PutBucketCorsRequest.builder()
                 .bucket(bucketName)
                 .corsConfiguration(corsConfiguration)

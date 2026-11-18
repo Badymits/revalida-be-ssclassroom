@@ -37,10 +37,10 @@ public class SubmissionController {
   @GetMapping("/submissions/{submissionId}/my-submission")
   @PreAuthorize("hasRole('learner')")
   public ResponseEntity<SubmissionDetailDto> fetchUnGradedSubmission(
-          @PathVariable String submissionId){
+          @PathVariable String submissionId, Principal principal){
     return ResponseEntity.ok()
             .body(submissionService
-                    .fetchSubmissionBySubmissionId(submissionId));
+                    .fetchSubmissionBySubmissionId(submissionId, principal.getName()));
   }
 
   @GetMapping("/submissions/{submissionId}/generate-get-url")

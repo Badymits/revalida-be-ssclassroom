@@ -48,7 +48,7 @@ public class SubmissionService {
   private final Long MAX_FILE_SIZE = 10485760L;
 
   @Transactional(readOnly = true)
-  public SubmissionDetailDto fetchSubmissionBySubmissionId(String submissionId){
+  public SubmissionDetailDto fetchSubmissionBySubmissionId(String submissionId, String learnerId){
 
     log.info("Fetching submission using submission ID: {}", submissionId);
 
@@ -61,6 +61,7 @@ public class SubmissionService {
             .findBySubmissionId(submissionId)
             .orElseThrow(() -> new NotFoundException("Submission Model not found!"));
 
+    validateLearnerOwnership(submissionModel, learnerId);
 
     List<SubmissionDetailDto.Artifact> artifacts = submissionArtifactRepository
             .findBySubmissionId(submissionId)
@@ -380,7 +381,7 @@ public class SubmissionService {
   }
 
   private SubmissionArtifactModel resolveOrCreateArtifact(String submissionId,
-          TurnInSubmissionRequestDto dto) {
+                                                          TurnInSubmissionRequestDto dto) {
 
     Optional<SubmissionArtifactModel> existingArtifact =
             submissionArtifactRepository.findBySubmissionId(submissionId);

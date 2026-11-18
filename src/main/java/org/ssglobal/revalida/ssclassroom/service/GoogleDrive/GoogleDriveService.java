@@ -77,20 +77,19 @@ public class GoogleDriveService {
               ex.getDetails().getMessage()
       );
 
+      if (ex.getStatusCode() == 403) {
+        throw new ApiException(
+                ErrorCode.NOT_FOUND,
+                "The Google Drive file or folder could not be found. Please check if the link or ID is correct."
+        );
+      }
       if (ex.getStatusCode() == 404) {
-      throw new ApiException(
-              ErrorCode.NOT_FOUND,
-              "The Google Drive file or folder could not be found. Please check if the link or ID is correct."
-      );
-    }
-
-    if (ex.getStatusCode() == 403) {
-      throw new ApiException(
-              ErrorCode.FORBIDDEN,
-              "The Google Drive folder or file is set to private. " +
-                      "Please change the link sharing settings to 'Anyone with the link can view'."
-      );
-    }
+        throw new ApiException(
+                ErrorCode.FORBIDDEN,
+                "The Google Drive folder or file is set to private. " +
+                        "Please change the link sharing settings to 'Anyone with the link can view'."
+        );
+      }
 
       throw new RuntimeException("Google Drive API failed: " + ex.getDetails().getMessage(), ex);
 

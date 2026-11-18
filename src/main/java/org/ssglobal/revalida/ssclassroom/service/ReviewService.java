@@ -11,6 +11,7 @@ import org.ssglobal.revalida.ssclassroom.dto.GradeDraftDto;
 import org.ssglobal.revalida.ssclassroom.dto.ReturnResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.RosterResponseDto;
 import org.ssglobal.revalida.ssclassroom.dto.SubmissionDetailDto;
+import org.ssglobal.revalida.ssclassroom.exceptions.BucketNotFoundException;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.repository.GradeDraftRepository;
 import org.ssglobal.revalida.ssclassroom.repository.GradeRepository;
@@ -103,9 +104,15 @@ public class ReviewService {
 
     private SubmissionDetailDto.Artifact toArtifact(ArtifactRow artifact) {
         String downloadUrl = null;
-        if (artifact.getS3Key() != null) {
-            String bucket = s3Service.resolveBucketForFile(fileExtension(artifact.getName()));
-            downloadUrl = s3Service.createPresignedGetUrl(bucket, artifact.getS3Key()).getUploadUrl();
+        String extension = fileExtension(artifact.getName());
+        if (artifact.getS3Key() != null && extension != null) {
+            try {
+                String bucket = s3Service.resolveBucketForFile(extension);
+                downloadUrl = s3Service.createPresignedGetUrl(bucket, artifact.getS3Key()).getUploadUrl();
+            } catch (BucketNotFoundException e) {
+                // No bucket for this file type, so the page still loads without a download link
+                downloadUrl = null;
+            }
         }
 
         return new SubmissionDetailDto.Artifact(artifact.getKind(), artifact.getName(),
@@ -113,6 +120,9 @@ public class ReviewService {
     }
 
     private String fileExtension(String fileName) {
+        if (fileName == null || fileName.lastIndexOf('.') < 0) {
+            return null;
+        }
         return fileName.substring(fileName.lastIndexOf('.') + 1);
     }
 }

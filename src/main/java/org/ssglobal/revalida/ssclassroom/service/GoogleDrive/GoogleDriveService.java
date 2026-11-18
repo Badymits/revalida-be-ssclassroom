@@ -13,6 +13,10 @@ import org.ssglobal.revalida.ssclassroom.exceptions.ApiException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 @Service
@@ -21,6 +25,13 @@ import java.util.List;
 public class GoogleDriveService {
 
   private final Drive driveService;
+
+  public static record DownloadedFile(
+    InputStream inputStream,
+    Long contentLength,
+    String contentType,
+    String resolvedFilename
+  ) {}
 
   public File extractFile(String driveUrl) {
     log.info("Extract files from Google Drive...");
@@ -107,7 +118,7 @@ public class GoogleDriveService {
   /*
     Downloads the binary input stream
   */
-  public InputStream downloadFileStream(String fileId){
+  public DownloadedFile downloadFileStream(String fileId){
 
     log.info("Retrieving binary input stream of file with ID: {}", fileId);
 
@@ -118,23 +129,48 @@ public class GoogleDriveService {
               "fileid doesnt exist!");
     }
 
+    Path tempFile = null;
     try {
-      File metadata =
-              driveService.files().get(fileId).setFields("mimeType").execute();
-
+      File metadata = driveService.files().get(fileId).setFields("name, mimeType").execute();
+      String rawName = metadata != null && metadata.getName() != null ? metadata.getName() : "document";
       String mimeType = metadata != null ? metadata.getMimeType() : "";
+
+      tempFile = Files.createTempFile("s3-upload-", ".tmp");
+      String finalMimeType;
+      String resolvedName;
 
       if ("application/vnd.google-apps.document".equals(mimeType)) {
         log.info("Exporting native Google Doc to .docx stream for file ID: {}", fileId);
-        return driveService.files()
-                .export(
-                  fileId,
-                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                .executeMediaAsInputStream();
+
+        finalMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        resolvedName = rawName.endsWith(".docx") ? rawName : rawName + ".docx";
+
+        try (InputStream exportStream = driveService.files()
+                .export(fileId, finalMimeType)
+                .executeMediaAsInputStream()){
+          Files.copy(exportStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+          throw new ApiException(ErrorCode.NOT_FOUND, "Cannot find files!");
+        }
+
+      } else {
+
+        log.info("Downloading binary stream for file ID: {}", fileId);
+        finalMimeType = mimeType;
+        resolvedName = rawName;
+
+        try (InputStream binaryStream = driveService.files()
+                .get(fileId)
+                .executeMediaAsInputStream()){
+          Files.copy(binaryStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
       }
 
-      log.info("Downloading binary stream for file ID: {}", fileId);
-      return driveService.files().get(fileId).executeMediaAsInputStream();
+      Long contentLength = Files.size(tempFile);
+      InputStream inputStream = Files.newInputStream(tempFile, StandardOpenOption.DELETE_ON_CLOSE);
+
+
+      return new DownloadedFile(inputStream, contentLength, finalMimeType, resolvedName);
 
     } catch (IOException ex){
       log.error("Failed to download file stream for ID: {}", fileId, ex);

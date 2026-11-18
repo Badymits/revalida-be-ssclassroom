@@ -48,7 +48,7 @@ public class DriveSubmissionProcessService {
         toUploadSubmissionRequest(downloadedFile, driveUrl),
         idempotencyKey);
 
-      uploadObjectToBucket(extractedFile.getId(), generatedPutUrl);
+      uploadObjectToBucket(downloadedFile, generatedPutUrl);
       return submissionService.turnInSubmission(
               submissionId,
               learnerId,
@@ -86,12 +86,10 @@ public class DriveSubmissionProcessService {
   }
 
   private void uploadObjectToBucket(
-          String extractedFileId,
+          GoogleDriveService.DownloadedFile downloadedFile,
           UploadSubmissionResponseDto generatedPutUrl
   ){
     log.info("Uploading file to bucket...");
-    GoogleDriveService.DownloadedFile downloadedFile =
-            googleDriveService.downloadFileStream(extractedFileId);
 
     try (InputStream fileInputStream = downloadedFile.inputStream()) {
 

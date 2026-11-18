@@ -77,7 +77,13 @@ public class GoogleDriveService {
               ex.getDetails().getMessage()
       );
 
-      if (ex.getStatusCode() == 403 || ex.getStatusCode() == 404) {
+      if (ex.getStatusCode() == 403) {
+        throw new ApiException(
+                ErrorCode.NOT_FOUND,
+                "The Google Drive file or folder could not be found. Please check if the link or ID is correct."
+        );
+      }
+      if (ex.getStatusCode() == 404) {
         throw new ApiException(
                 ErrorCode.FORBIDDEN,
                 "The Google Drive folder or file is set to private. " +
@@ -113,10 +119,25 @@ public class GoogleDriveService {
     }
 
     try {
+      File metadata =
+              driveService.files().get(fileId).setFields("mimeType").execute();
+
+      String mimeType = metadata != null ? metadata.getMimeType() : "";
+
+      if ("application/vnd.google-apps.document".equals(mimeType)) {
+        log.info("Exporting native Google Doc to .docx stream for file ID: {}", fileId);
+        return driveService.files()
+                .export(
+                  fileId,
+                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                .executeMediaAsInputStream();
+      }
+
       log.info("Downloading binary stream for file ID: {}", fileId);
       return driveService.files().get(fileId).executeMediaAsInputStream();
+
     } catch (IOException ex){
-      log.error("Failed to download file stream for ID: {}", fileId);
+      log.error("Failed to download file stream for ID: {}", fileId, ex);
       throw new RuntimeException("Failed to download file stream for ID", ex);
     }
   }

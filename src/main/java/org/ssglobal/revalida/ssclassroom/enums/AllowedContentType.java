@@ -1,14 +1,21 @@
 package org.ssglobal.revalida.ssclassroom.enums;
 
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.Set;
 
+
+@Getter
 public enum AllowedContentType {
   PDF(Set.of("application/pdf")),
   TXT(Set.of("text/plain")),
   ZIP(Set.of("application/zip", "application/x-zip-compressed")),
-  DOCX(Set.of("application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+  DOCX(Set.of(
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "application/vnd.google-apps.document"
+  ));
 
   private final Set<String> mimeTypes;
 

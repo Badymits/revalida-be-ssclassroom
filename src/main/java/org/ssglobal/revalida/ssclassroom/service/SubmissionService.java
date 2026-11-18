@@ -110,6 +110,41 @@ public class SubmissionService {
     );
   }
 
+  @Transactional(readOnly = true)
+  public String generateGetUrl(String submissionId, String learnerId){
+
+    log.info("Generating Get URL for artifact: {}", submissionId);
+
+    if (submissionId == null || submissionId.isBlank()){
+      log.info("Missing artifact ID. Cannot proceed with generating get request");
+      throw new ApiException(
+              ErrorCode.NOT_FOUND,
+              "Missing artifact ID. Cannot open file");
+    }
+    return submissionArtifactRepository
+      .findBySubmissionId(submissionId)
+        .map(artifactModel -> {
+
+          SubmissionModel submission =
+            submissionRepository.findBySubmissionId(artifactModel.getSubmissionId())
+              .orElseThrow(() -> new ApiException(
+                ErrorCode.NOT_FOUND, "Submission ID of artifact doesn't exist"));
+
+          validateLearnerOwnership(submission, learnerId);
+
+          String bucketName = s3Service.resolveBucketForFile(
+                  retrieveFileExtension(artifactModel.getArtifactName()));
+
+          return s3Service.createPresignedGetUrl(bucketName, artifactModel.getS3Key())
+                  .getUploadUrl();
+
+        })
+        .orElseThrow(() -> new ApiException(
+                ErrorCode.NOT_FOUND,
+                "Artifact not found with ID: " + submissionId
+        ));
+  }
+
   @Transactional
   public UploadSubmissionResponseDto generateS3UploadUrl(String submissionId, String learnerId,
           UploadSubmissionRequestDto submissionRequestDto, String idempotencyKey) {
@@ -163,8 +198,18 @@ public class SubmissionService {
       }
     );
 
+    boolean isGoogleDoc = submissionRequestDto.getContentType()!= null &&
+            submissionRequestDto.getContentType().toLowerCase()
+                    .contains("application/vnd.google-apps.document");
 
-    String fileExtension = retrieveFileExtension(submissionRequestDto.getFilename());
+    String filename = submissionRequestDto.getFilename();
+
+    if (filename == null || filename.isBlank()) {
+      throw new ApiException(ErrorCode.NOT_FOUND, "Filename is required.");
+    }
+
+    // Native Google Docs default to docx without needing extension parsing
+    String fileExtension = isGoogleDoc? "docx" : retrieveFileExtension(filename);
     log.info("Retrieved file extension type: {} for file: {}",
             fileExtension, submissionRequestDto.getFilename());
 
@@ -183,7 +228,7 @@ public class SubmissionService {
     artifactModel.setKind(submissionRequestDto.getKind());
 
     // Need to set url of link submissions for the artifact since
-    // fly check constraint requires the drive url to be saved
+    // flyway check constraint requires the drive url to be saved
     if (submissionRequestDto.getKind().equals(SubmissionType.link)){
       artifactModel.setUrl(submissionRequestDto.getDriveUrl());
     }
@@ -205,11 +250,8 @@ public class SubmissionService {
   }
 
   @Transactional
-  public TurnInSubmissionResponseDto turnInSubmission(
-          String submissionId,
-          String learnerId,
-          String idempotencyKey,
-          TurnInSubmissionRequestDto submissionRequestDto){
+  public TurnInSubmissionResponseDto turnInSubmission(String submissionId, String learnerId,
+          String idempotencyKey, TurnInSubmissionRequestDto submissionRequestDto){
 
     log.info("Updating Submission artifact to Submitted");
     log.info("Submission type: {}", submissionRequestDto.getKind());
@@ -231,6 +273,12 @@ public class SubmissionService {
         log.error("Submission not found with ID {}", submissionId);
         return NotFoundException.of("Submission", submissionId);
       });
+
+    if (submission.getStatus().equals(Status.returned)){
+      log.error("Cannot update a graded/returned submission!");
+      throw new StateInvalidException("You cannot turn in another submission " +
+              "if your submission is already graded!");
+    }
 
     validateLearnerOwnership(submission, learnerId);
 
@@ -309,12 +357,11 @@ public class SubmissionService {
       }
     );
 
-
     // cannot proceed if submission status is assigned or returned
     if (!submission.getStatus().equals(Status.submitted)){
       log.error("Submission with state: {} is invalid", submission.getStatus());
-      throw new StateInvalidException("Submission with state: {} is invalid %s"
-              .formatted( submission.getStatus()));
+      throw new StateInvalidException("You can no longer unsubmit!. " +
+              "Your submission has already been graded");
     }
 
     validateLearnerOwnership(submission, learnerId);
@@ -396,11 +443,8 @@ public class SubmissionService {
 
   }
 
-  private void setArtifactDetails(
-          SubmissionArtifactModel artifact,
-          TurnInSubmissionRequestDto dto,
-          String submissionId
-  ) {
+  private void setArtifactDetails(SubmissionArtifactModel artifact,
+          TurnInSubmissionRequestDto dto, String submissionId) {
 
     log.info("Setting artifact details for artifact: {}", artifact.getArtifactId());
     artifact.setSubmissionId(submissionId);

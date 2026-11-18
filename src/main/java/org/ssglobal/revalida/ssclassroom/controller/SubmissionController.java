@@ -43,6 +43,15 @@ public class SubmissionController {
                     .fetchSubmissionBySubmissionId(submissionId));
   }
 
+  @GetMapping("/submissions/{submissionId}/generate-get-url")
+  @PreAuthorize("hasRole('learner')")
+  public ResponseEntity<String> fetchPresignedGetUrl (
+          @PathVariable String submissionId, Principal principal){
+    return ResponseEntity.ok()
+            .body(submissionService
+                    .generateGetUrl(submissionId, principal.getName()));
+  }
+
   @PostMapping("/submissions/{submissionId}/upload-url")
   @PreAuthorize("hasRole('learner')")
   public ResponseEntity<UploadSubmissionResponseDto> uploadFileWithS3Url(
@@ -64,8 +73,7 @@ public class SubmissionController {
           @PathVariable String submissionId,
           @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
           @RequestBody String driveUrl,
-          Principal principal
-  ){
+          Principal principal){
     return ResponseEntity.ok()
             .body(driveSubmissionService
                     .processDriveSubmission(
@@ -83,8 +91,7 @@ public class SubmissionController {
           @RequestHeader(value = "Idempotency-Key", required = false) String
                   idempotencyKey,
           @RequestBody TurnInSubmissionRequestDto submissionRequestDto,
-          Principal principal
-  ) {
+          Principal principal) {
 
     return ResponseEntity.ok()
             .body(submissionService

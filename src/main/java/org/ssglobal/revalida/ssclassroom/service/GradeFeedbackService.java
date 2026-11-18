@@ -1,6 +1,5 @@
 package org.ssglobal.revalida.ssclassroom.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ssglobal.revalida.ssclassroom.dto.GradeFeedback.GradeFeedbackResponseDto;
@@ -8,21 +7,18 @@ import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.repository.GradeFeedbackRepository;
 import org.ssglobal.revalida.ssclassroom.service.S3Bucket.S3Service;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 // readOnly @Transactional follows AuthService/AssignmentService in this repo (not covered by the Java Training Notes).
+@Slf4j
 @Service
+@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class GradeFeedbackService {
 
     private final GradeFeedbackRepository gradeFeedbackRepository;
     private final S3Service s3Service;
-    private final String bucketName;
-
-    public GradeFeedbackService(GradeFeedbackRepository gradeFeedbackRepository, S3Service s3Service,
-            @Value("${aws.s3.bucket-name}") String bucketName) {
-        this.gradeFeedbackRepository = gradeFeedbackRepository;
-        this.s3Service = s3Service;
-        this.bucketName = bucketName;
-    }
 
     /**
      * @param userId the JWT subject. The query only matches this learner's own returned submission, so another
@@ -34,9 +30,19 @@ public class GradeFeedbackService {
                 .orElseThrow(() -> NotFoundException.of("Graded submission", submissionId));
 
         // The query left the artifact's S3 key in artifactDownloadUrl; swap it for a short-lived signed URL.
-        String s3Key = row.artifactDownloadUrl();
-        return row.withDownloadUrl(s3Key == null
-                ? null
-                : s3Service.createPresignedGetUrl(bucketName, s3Key).getUploadUrl());
+        return row.withDownloadUrl(signedDownloadUrl(row.artifactName(), row.artifactDownloadUrl()));
+    }
+
+    private String signedDownloadUrl(String fileName, String s3Key) {
+        if (s3Key == null || fileName == null || fileName.lastIndexOf('.') < 0) {
+            return null;
+        }
+        try {
+            String bucket = s3Service.resolveBucketForFile(fileName.substring(fileName.lastIndexOf('.') + 1));
+            return s3Service.createPresignedGetUrl(bucket, s3Key).getUploadUrl();
+        } catch (RuntimeException e) {
+            log.warn("No download link for {}: {}", s3Key, e.getMessage());
+            return null;
+        }
     }
 }

@@ -43,13 +43,13 @@ public class SubmissionController {
                     .fetchSubmissionBySubmissionId(submissionId));
   }
 
-  @GetMapping("/submissions/{artifactId}/generate-get-url")
+  @GetMapping("/submissions/{submissionId}/generate-get-url")
   @PreAuthorize("hasRole('learner')")
   public ResponseEntity<String> fetchPresignedGetUrl (
-          @PathVariable String artifactId, Principal principal){
+          @PathVariable String submissionId, Principal principal){
     return ResponseEntity.ok()
             .body(submissionService
-                    .generateGetUrl(artifactId, principal.getName()));
+                    .generateGetUrl(submissionId, principal.getName()));
   }
 
   @PostMapping("/submissions/{submissionId}/upload-url")

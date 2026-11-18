@@ -111,35 +111,38 @@ public class SubmissionService {
   }
 
   @Transactional(readOnly = true)
-  public String generateGetUrl(String artifactId, String learnerId){
+  public String generateGetUrl(String submissionId, String learnerId){
 
-    log.info("Generating Get URL for artifact: {}", artifactId);
+    log.info("Generating Get URL for artifact: {}", submissionId);
 
-    if (artifactId == null || artifactId.isBlank()){
+    if (submissionId == null || submissionId.isBlank()){
       log.info("Missing artifact ID. Cannot proceed with generating get request");
       throw new ApiException(
               ErrorCode.NOT_FOUND,
               "Missing artifact ID. Cannot open file");
     }
-    return submissionArtifactRepository.findByArtifactId(artifactId)
-            .map(artifactModel -> {
+    return submissionArtifactRepository
+      .findBySubmissionId(submissionId)
+        .map(artifactModel -> {
 
-              SubmissionModel submission =
-                      submissionRepository.findBySubmissionId(artifactModel.getSubmissionId())
-                              .orElseThrow(() -> new ApiException(
-                                      ErrorCode.NOT_FOUND, "Submission ID of artifact doesn't exist"));
+          SubmissionModel submission =
+            submissionRepository.findBySubmissionId(artifactModel.getSubmissionId())
+              .orElseThrow(() -> new ApiException(
+                ErrorCode.NOT_FOUND, "Submission ID of artifact doesn't exist"));
 
-              validateLearnerOwnership(submission, learnerId);
+          validateLearnerOwnership(submission, learnerId);
 
-              return s3Service.createPresignedGetUrl(
-                      retrieveFileExtension(artifactModel.getArtifactName()),
-                      artifactModel.getS3Key()
-              ).getUploadUrl();
-            })
-            .orElseThrow(() -> new ApiException(
-                    ErrorCode.NOT_FOUND,
-                    "Artifact not found with ID: " + artifactId
-            ));
+          String bucketName = s3Service.resolveBucketForFile(
+                  retrieveFileExtension(artifactModel.getArtifactName()));
+
+          return s3Service.createPresignedGetUrl(bucketName, artifactModel.getS3Key())
+                  .getUploadUrl();
+
+        })
+        .orElseThrow(() -> new ApiException(
+                ErrorCode.NOT_FOUND,
+                "Artifact not found with ID: " + submissionId
+        ));
   }
 
   @Transactional
@@ -225,7 +228,7 @@ public class SubmissionService {
     artifactModel.setKind(submissionRequestDto.getKind());
 
     // Need to set url of link submissions for the artifact since
-    // fly check constraint requires the drive url to be saved
+    // flyway check constraint requires the drive url to be saved
     if (submissionRequestDto.getKind().equals(SubmissionType.link)){
       artifactModel.setUrl(submissionRequestDto.getDriveUrl());
     }

@@ -302,7 +302,7 @@ public class SubmissionService {
 
     String presignedUrl = null;
 
-    if (artifactModel.getKind().equals(SubmissionType.file)) {
+    if (!artifactModel.getKind().equals(SubmissionType.text)) {
 
       log.info("Generating GET url for artifact: {} to return to Frontend",
               artifactModel.getArtifactName());

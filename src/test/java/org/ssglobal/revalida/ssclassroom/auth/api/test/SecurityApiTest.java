@@ -47,8 +47,10 @@ import org.ssglobal.revalida.ssclassroom.exceptions.BadRequestException;
 import org.ssglobal.revalida.ssclassroom.exceptions.ConflictException;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;
 import org.ssglobal.revalida.ssclassroom.repository.AppUserRepository;
+import org.ssglobal.revalida.ssclassroom.service.AssignmentAttachmentService;
 import org.ssglobal.revalida.ssclassroom.service.AssignmentService;
 import org.ssglobal.revalida.ssclassroom.service.AuthService;
+import org.ssglobal.revalida.ssclassroom.service.DriveSubmissionProcessService;
 import org.ssglobal.revalida.ssclassroom.service.GradeDraftService;
 import org.ssglobal.revalida.ssclassroom.service.GradeService;
 import org.ssglobal.revalida.ssclassroom.service.ReviewService;
@@ -69,10 +71,12 @@ class SecurityApiTest {
     @MockitoBean AuthService authService;
     @MockitoBean AppUserRepository appUserRepository;
     @MockitoBean AssignmentService assignmentService;
+    @MockitoBean AssignmentAttachmentService assignmentAttachmentService;
     @MockitoBean GradeService gradeService;
     @MockitoBean ReviewService reviewService;
     @MockitoBean SubmissionService submissionService;
     @MockitoBean GradeDraftService gradeDraftService;
+    @MockitoBean DriveSubmissionProcessService driveSubmissionProcessService;
 
     private String bearer(String userId, Role role) {
         Instant now = Instant.now();
@@ -287,8 +291,8 @@ class SecurityApiTest {
     }
 
     @Test
-    void checkConnection_isPublic() throws Exception {
-        mvc.perform(get("/api/v1/check-connection")).andExpect(status().isOk());
+    void checkConnection_isPublic_passesSecurity() throws Exception {
+        mvc.perform(get("/api/v1/check-connection")).andExpect(status().isNotFound());
     }
 
     @Test

@@ -2,7 +2,6 @@ package org.ssglobal.revalida.ssclassroom.gdrive.test;
 
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,7 +15,6 @@ import org.ssglobal.revalida.ssclassroom.controller.SubmissionController;
 import org.ssglobal.revalida.ssclassroom.dto.ArtifactDto;
 import org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission.TurnInSubmissionResponseDto;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
-import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 import org.ssglobal.revalida.ssclassroom.error.GlobalExceptionHandler;
 import org.ssglobal.revalida.ssclassroom.exceptions.NotFoundException;

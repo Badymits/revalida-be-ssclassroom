@@ -8,16 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 import org.ssglobal.revalida.ssclassroom.dto.PresignedS3UrlDto;
-import org.ssglobal.revalida.ssclassroom.enums.AssignmentStatus;
-import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
-import org.ssglobal.revalida.ssclassroom.exceptions.BucketNotFoundException;
-import org.ssglobal.revalida.ssclassroom.model.CohortModel;
-import org.ssglobal.revalida.ssclassroom.repository.AssignmentRepository;
-import org.ssglobal.revalida.ssclassroom.repository.CohortRepository;
 import org.ssglobal.revalida.ssclassroom.service.S3Bucket.S3Service;
 import org.ssglobal.revalida.ssclassroom.service.SubmissionService;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -46,17 +38,6 @@ public class LocalStackConfigurationTest {
   @Autowired
   private S3Service s3Service;
 
-  // will remove
-  @Autowired
-  private AssignmentRepository assignmentRepository;
-
-  // will remove
-  @Autowired
-  private CohortRepository cohortRepository;
-
-  // will remove
-  @Autowired
-  private jakarta.persistence.EntityManager entityManager;
 
   @Value("${aws.s3.buckets.txt}")
   private String txtBucketName;
@@ -86,14 +67,6 @@ public class LocalStackConfigurationTest {
   }
 
   @Test
-  @Disabled
-  public void testPresignedPutUrlDurationExceed15Minutes() {
-
-    PresignedS3UrlDto url = s3Service.createPresignedPutUrl(
-            "", "", "");
-  }
-
-  @Test
   public void testUploadObjectsToS3() throws IOException, InterruptedException {
 
     File dummyFile = new ClassPathResource("dummytextfiles/DummyTxt1.txt").getFile();
@@ -106,20 +79,21 @@ public class LocalStackConfigurationTest {
     );
 
     assertNotNull(putUrlDto);
-    HttpClient httpClient = HttpClient.newHttpClient();
-    HttpRequest uploadObjectRequest = HttpRequest.newBuilder()
-            .uri(URI.create(putUrlDto.getUploadUrl()))
-            .header("Content-type", "text/plain")
-            .PUT(HttpRequest.BodyPublishers.ofFile(dummyFile.toPath()))
-            .build();
+    HttpResponse<Void> uploadResponse;
+    try (HttpClient httpClient = HttpClient.newHttpClient()) {
+      HttpRequest uploadObjectRequest = HttpRequest.newBuilder()
+              .uri(URI.create(putUrlDto.getUploadUrl()))
+              .header("Content-type", "text/plain")
+              .PUT(HttpRequest.BodyPublishers.ofFile(dummyFile.toPath()))
+              .build();
 
-    HttpResponse<Void> uploadResponse = httpClient.send(uploadObjectRequest,
-            HttpResponse.BodyHandlers.discarding());
+      uploadResponse = httpClient.send(uploadObjectRequest,
+              HttpResponse.BodyHandlers.discarding());
+    }
 
     assertEquals(200, uploadResponse.statusCode(),
             "File Upload to S3 has failed");
 
-    //submissionService.updateSubmissionTurnIn();
 
     HeadObjectRequest headRequest = HeadObjectRequest.builder()
             .bucket(putUrlDto.getBucketName())
@@ -150,13 +124,15 @@ public class LocalStackConfigurationTest {
     assertNotNull(getUrlDto.getUploadUrl(), "URL string should not be null");
     assertEquals("GET", getUrlDto.getHttpMethod(), "HTTP method should be GET");
 
-    HttpClient client = HttpClient.newHttpClient();
-    HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(getUrlDto.getUploadUrl()))
-            .GET()
-            .build();
+    HttpResponse<String> response;
+    try (HttpClient client = HttpClient.newHttpClient()) {
+      HttpRequest request = HttpRequest.newBuilder()
+              .uri(URI.create(getUrlDto.getUploadUrl()))
+              .GET()
+              .build();
 
-    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+      response = client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
 
     assertEquals(200, response.statusCode(), "GET request to pre-signed URL should return 200 OK");
     assertFalse(response.body().isEmpty(), "Downloaded body should not be empty");

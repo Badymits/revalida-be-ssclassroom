@@ -1,5 +1,5 @@
 // https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/examples-s3-presign.html
-// reference to work with Amazon s3 pre-signed URLs
+// reference to work with Amazon S3 pre-signed URLs
 
 package org.ssglobal.revalida.ssclassroom.service.S3Bucket;
 
@@ -246,7 +246,7 @@ public class S3Service {
 
       return String.format(
               "sub/%s/%s",
-              UUID.randomUUID().toString(),
+              UUID.randomUUID(),
               originalFilename);
     }
 

@@ -43,8 +43,4 @@ public class SubmissionArtifactModel {
   @Column(unique = true)
   private String url;
 
-//  @OneToOne(mappedBy = "submissionArtifact")
-//  private SubmissionModel submissionModel;
-
-
 }

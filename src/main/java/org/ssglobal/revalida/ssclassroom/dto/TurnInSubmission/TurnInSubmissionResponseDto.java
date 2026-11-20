@@ -6,8 +6,6 @@ import org.ssglobal.revalida.ssclassroom.dto.ArtifactDto;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 public class TurnInSubmissionResponseDto {

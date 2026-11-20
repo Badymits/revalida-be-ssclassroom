@@ -1,9 +1,9 @@
 package org.ssglobal.revalida.ssclassroom.enums;
 
 
-import lombok.Getter;
-
 import java.util.Set;
+
+import lombok.Getter;
 
 
 @Getter

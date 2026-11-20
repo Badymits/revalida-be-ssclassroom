@@ -110,7 +110,6 @@ public class ReviewService {
                 String bucket = s3Service.resolveBucketForFile(extension);
                 downloadUrl = s3Service.createPresignedGetUrl(bucket, artifact.getS3Key()).getUploadUrl();
             } catch (BucketNotFoundException e) {
-                // No bucket for this file type, so the page still loads without a download link
                 downloadUrl = null;
             }
         }

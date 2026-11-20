@@ -1,11 +1,12 @@
 package org.ssglobal.revalida.ssclassroom.dto.TurnInSubmission;
 
 
-import lombok.Data;
+import java.time.Instant;
+
 import org.ssglobal.revalida.ssclassroom.dto.ArtifactDto;
 import org.ssglobal.revalida.ssclassroom.enums.Status;
 
-import java.time.Instant;
+import lombok.Data;
 
 @Data
 public class TurnInSubmissionResponseDto {

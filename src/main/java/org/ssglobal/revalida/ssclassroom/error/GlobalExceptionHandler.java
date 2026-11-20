@@ -103,7 +103,6 @@ public class GlobalExceptionHandler {
         return respond(ErrorCode.NOT_FOUND, ErrorCode.NOT_FOUND.getDefaultMessage());
     }
 
-    // The database message can contain table and column names, so the client only gets a general message.
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleDataIntegrity(DataIntegrityViolationException ex) {
         log.warn("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
@@ -127,7 +126,6 @@ public class GlobalExceptionHandler {
         return respond(code, message);
     }
 
-    // Last safety net. The real cause goes to the server log only, never to the client.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception ex) {
         log.error("Unexpected error", ex);

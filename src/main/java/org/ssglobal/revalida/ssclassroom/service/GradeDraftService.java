@@ -2,7 +2,6 @@ package org.ssglobal.revalida.ssclassroom.service;
 
 import java.time.Instant;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ssglobal.revalida.ssclassroom.exceptions.BadRequestException;
@@ -20,7 +19,6 @@ public class GradeDraftService {
     private final GradeRepository gradeRepository;
     private final GradeDraftRepository gradeDraftRepository;
 
-    @Autowired
     public GradeDraftService(GradeRepository gradeRepository,
             GradeDraftRepository gradeDraftRepository) {
         this.gradeRepository = gradeRepository;

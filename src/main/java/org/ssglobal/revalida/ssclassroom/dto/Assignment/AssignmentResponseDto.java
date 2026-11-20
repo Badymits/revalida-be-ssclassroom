@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.List;
 
 import org.ssglobal.revalida.ssclassroom.enums.AssignmentStatus;
-import org.ssglobal.revalida.ssclassroom.enums.SubmissionKind;
 import org.ssglobal.revalida.ssclassroom.enums.SubmissionType;
 
 import lombok.AllArgsConstructor;

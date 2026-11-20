@@ -10,16 +10,6 @@ import org.ssglobal.revalida.ssclassroom.dto.LearnerHome.LearnerHomeResponseDto;
 import org.ssglobal.revalida.ssclassroom.model.CohortMemberId;
 import org.ssglobal.revalida.ssclassroom.model.CohortMemberModel;
 
-/**
- * Read-only L1 query over Dev 1-3 tables. The SQL lives here, on the repository method.
- *
- * Drafts are excluded; a published assignment with no submission row (learner joined after publish) is 'assigned';
- * the grade is joined only for returned submissions. The columns are in the same order as
- * LearnerHomeResponseDto's canonical constructor, so Spring Data fills the record by position.
- *
- * Reference: SQL_Fundamentals_PostgreSQL_Standards.docx ("Coalescing: The COALESCE Function") and
- * SQL_Fundamentals_PostgreSQL_Standards [Part 2].docx ("Left Join").
- */
 @Repository
 public interface LearnerHomeRepository extends JpaRepository<CohortMemberModel, CohortMemberId> {
 
@@ -62,7 +52,6 @@ public interface LearnerHomeRepository extends JpaRepository<CohortMemberModel, 
             """, nativeQuery = true)
     List<LearnerHomeResponseDto> findRows(@Param("userId") String userId);
 
-    /** Published assignments in the learner's cohort(s) that have no submission row for them yet (late joiners). */
     @Query(value = """
             SELECT a.assignment_id
             FROM cohort_member cm

@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/** Composite primary key (cohort_id, user_id) for {@link CohortMemberModel}. */
 @Getter
 @Setter
 @NoArgsConstructor

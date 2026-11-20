@@ -13,10 +13,6 @@ import org.ssglobal.revalida.ssclassroom.service.GradeFeedbackService;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * L3 Grade & feedback read model, learner-only and scoped to the caller. Same conventions as LearnerHomeController.
- * 404 when the submission is not the caller's, or is not returned yet.
- */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

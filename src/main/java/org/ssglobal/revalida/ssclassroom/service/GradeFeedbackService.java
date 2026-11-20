@@ -10,7 +10,6 @@ import org.ssglobal.revalida.ssclassroom.service.S3Bucket.S3Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-// readOnly @Transactional follows AuthService/AssignmentService in this repo (not covered by the Java Training Notes).
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -20,16 +19,11 @@ public class GradeFeedbackService {
     private final GradeFeedbackRepository gradeFeedbackRepository;
     private final S3Service s3Service;
 
-    /**
-     * @param userId the JWT subject. The query only matches this learner's own returned submission, so another
-     *               learner's submission and a not-yet-returned one both come back as 404 (existence is not leaked).
-     */
     public GradeFeedbackResponseDto getMyFeedback(String submissionId, String userId) {
         GradeFeedbackResponseDto row = gradeFeedbackRepository.findRow(submissionId, userId).stream()
                 .findFirst()
                 .orElseThrow(() -> NotFoundException.of("Graded submission", submissionId));
 
-        // The query left the artifact's S3 key in artifactDownloadUrl; swap it for a short-lived signed URL.
         return row.withDownloadUrl(signedDownloadUrl(row.artifactName(), row.artifactDownloadUrl()));
     }
 

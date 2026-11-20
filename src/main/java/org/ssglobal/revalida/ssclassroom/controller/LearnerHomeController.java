@@ -13,13 +13,6 @@ import org.ssglobal.revalida.ssclassroom.service.LearnerHomeService;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * L1 Learner home read model. Not under /auth/** (that path is public); learner-only via method security.
- *
- * Reference: Java Training Notes / Spring_Hibernate_Web_and_API_Concepts-STANDARDS.docx (@RestController, @GetMapping)
- * and Spring_Security_and_REST_Services_STANDARDS.docx (ResponseEntity). @PreAuthorize/hasRole and Principal are NOT in
- * the notes; they follow MySecurityContext (@EnableMethodSecurity) and AuthController.me().
- */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

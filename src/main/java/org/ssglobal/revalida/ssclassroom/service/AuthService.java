@@ -49,7 +49,6 @@ public class AuthService {
     @Value("${app.jwt.expiration-hours:8}")
     private long expirationHours;
 
-    /** Spring checks the password (UserDetailsService + BCrypt); a wrong login is a BadCredentialsException (401). */
     @Transactional(readOnly = true)
     public LoginResponseDto login(LoginRequestDto request) {
         String username = request.username().trim();
@@ -61,11 +60,6 @@ public class AuthService {
         return issueToken(user);
     }
 
-    /**
-     * Self-registration, atomic.
-     * learner -> user + exactly one cohort_member row (cohortId required, must exist).
-     * trainer -> user only; no cohort_member row, cohortId ignored.
-     */
     @Transactional
     public MeResponseDto register(RegisterRequestDto request) {
         Role role = request.role();
@@ -94,7 +88,6 @@ public class AuthService {
         try {
             user = appUserRepository.saveAndFlush(user);
         } catch (DataIntegrityViolationException e) {
-            // lost a race on the unique username
             throw new ConflictException("Username is already taken");
         }
 
@@ -104,21 +97,17 @@ public class AuthService {
         return me(user);
     }
 
-    /** @param userId the JWT subject */
     @Transactional(readOnly = true)
     public MeResponseDto me(String userId) {
-        // a valid token for a user that no longer exists is treated as unauthenticated
         return me(appUserRepository.findById(userId)
                 .orElseThrow(() -> new BadCredentialsException("User no longer exists")));
     }
 
-    /** Public list for the registration dropdown. */
     @Transactional(readOnly = true)
     public List<CohortOptionDto> listCohorts() {
         return cohortRepository.findAll(Sort.by("name")).stream().map(CohortOptionDto::from).toList();
     }
 
-    // trainers have no cohort_member rows, so their cohortIds is []
     private MeResponseDto me(AppUserModel user) {
         List<String> cohortIds = user.getRole() == Role.learner
                 ? cohortMemberRepository.findByUserId(user.getUserId()).stream()

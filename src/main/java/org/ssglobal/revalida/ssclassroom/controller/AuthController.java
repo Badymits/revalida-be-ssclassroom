@@ -20,7 +20,6 @@ import org.ssglobal.revalida.ssclassroom.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-/** Identity endpoints. /auth/** is public (see MySecurityContext); /me needs a token. */
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

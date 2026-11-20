@@ -57,7 +57,6 @@ class AuthServiceTest {
     @Mock AuthenticationManager authenticationManager;
     @Mock JwtEncoder jwtEncoder;
 
-    // real encoder: we want to see that the stored value really is a BCrypt hash
     PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     AuthService authService;
@@ -84,8 +83,6 @@ class AuthServiceTest {
             return u;
         });
     }
-
-    // ---------- learner registration ----------
 
     @Test
     void registerLearner_createsUserAndSingleCohortMembership() {
@@ -157,8 +154,6 @@ class AuthServiceTest {
         verifyNoInteractions(appUserRepository, cohortMemberRepository);
     }
 
-    // ---------- trainer registration ----------
-
     @Test
     void registerTrainer_createsUserWithoutAnyCohortMembership() {
         stubSaveAssignsId("usr_T1");
@@ -182,8 +177,6 @@ class AuthServiceTest {
         verifyNoInteractions(cohortMemberRepository, cohortRepository);
     }
 
-    // ---------- duplicate username ----------
-
     @Test
     void register_duplicateUsername_isConflictAndNothingIsSaved() {
         when(cohortRepository.existsById(COHORT)).thenReturn(true);
@@ -197,7 +190,6 @@ class AuthServiceTest {
 
     @Test
     void register_duplicateUsernameDetectedByDatabaseRace_isConflict() {
-        // the exists-check passes, but another request inserts the same username first
         when(cohortRepository.existsById(COHORT)).thenReturn(true);
         when(appUserRepository.existsByUsername("ada")).thenReturn(false);
         when(appUserRepository.saveAndFlush(any(AppUserModel.class)))
@@ -218,8 +210,6 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.register(trainer("tom", null))).isInstanceOf(ConflictException.class);
     }
 
-    // ---------- login ----------
-
     @Test
     void login_withCorrectCredentials_returnsBearerToken() {
         AppUserModel user = AppUserModel.builder().userId("usr_L1").username("ada").role(Role.learner).build();
@@ -234,7 +224,6 @@ class AuthServiceTest {
         assertThat(response.tokenType()).isEqualTo("Bearer");
         assertThat(response.expiresIn()).isEqualTo(8 * 3600);
 
-        // the token carries the usr_ id as subject and the role as claim
         ArgumentCaptor<JwtEncoderParameters> params = ArgumentCaptor.forClass(JwtEncoderParameters.class);
         verify(jwtEncoder).encode(params.capture());
         assertThat(params.getValue().getClaims().getSubject()).isEqualTo("usr_L1");
@@ -250,8 +239,6 @@ class AuthServiceTest {
 
         verifyNoInteractions(jwtEncoder);
     }
-
-    // ---------- GET /me ----------
 
     @Test
     void me_learner_returnsAssignedCohort() {
@@ -291,8 +278,6 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.me("usr_gone")).isInstanceOf(BadCredentialsException.class);
     }
-
-    // ---------- GET /auth/cohorts ----------
 
     @Test
     void listCohorts_returnsIdsAndNames() {

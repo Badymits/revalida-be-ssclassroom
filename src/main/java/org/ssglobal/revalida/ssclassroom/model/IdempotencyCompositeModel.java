@@ -3,7 +3,6 @@ package org.ssglobal.revalida.ssclassroom.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Id;
 import lombok.Getter;
 import lombok.Setter;
 

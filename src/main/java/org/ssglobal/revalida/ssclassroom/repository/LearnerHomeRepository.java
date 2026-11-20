@@ -11,17 +11,55 @@ import org.ssglobal.revalida.ssclassroom.model.CohortMemberId;
 import org.ssglobal.revalida.ssclassroom.model.CohortMemberModel;
 
 /**
- * Read-only L1 query over Dev 1-3 tables. The SQL and its record mapping live on CohortMemberModel as
- * @NamedNativeQuery "LearnerHome.findRows" + @SqlResultSetMapping "LearnerHomeResponseDtoMapping".
+ * Read-only L1 query over Dev 1-3 tables. The SQL lives here, on the repository method.
  *
- * Reference: ORM_Standards [Part 1-pg72].docx (record DTO from native SQL). Calling a named query through a Spring Data
- * Repository with @Query(name=...) / @Param is NOT in the Java Training Notes; it follows Spring Data conventions.
+ * Drafts are excluded; a published assignment with no submission row (learner joined after publish) is 'assigned';
+ * the grade is joined only for returned submissions. The columns are in the same order as
+ * LearnerHomeResponseDto's canonical constructor, so Spring Data fills the record by position.
+ *
+ * Reference: SQL_Fundamentals_PostgreSQL_Standards.docx ("Coalescing: The COALESCE Function") and
+ * SQL_Fundamentals_PostgreSQL_Standards [Part 2].docx ("Left Join").
  */
-// Spring Data's marker base is fully qualified because its name clashes with the @Repository stereotype above.
 @Repository
 public interface LearnerHomeRepository extends JpaRepository<CohortMemberModel, CohortMemberId> {
 
-    @Query(name = "LearnerHome.findRows", nativeQuery = true)
+    @Query(value = """
+            SELECT
+                -- assignment
+                a.assignment_id                      AS assignment_id,
+
+                -- cohort
+                c.cohort_id                          AS cohort_id,
+                c.name                               AS cohort_name,
+
+                -- assignment
+                a.title                              AS title,
+                a.submission_type                    AS submission_type,
+                a.points                             AS points,
+
+                -- submission ('assigned' when the learner has no row yet)
+                s.submission_id                      AS submission_id,
+                COALESCE(s.status, 'assigned')       AS status,
+                s.submitted_at                       AS submitted_at,
+
+                -- grade (only for returned submissions)
+                g.points                             AS grade_points,
+                g.returned_at                        AS grade_returned_at
+            FROM cohort_member cm
+            JOIN cohort c
+                ON c.cohort_id = cm.cohort_id
+            JOIN assignment a
+                ON a.cohort_id = c.cohort_id
+                AND a.status = 'published'
+            LEFT JOIN submission s
+                ON s.assignment_id = a.assignment_id
+                AND s.learner_id = cm.user_id
+            LEFT JOIN grade g
+                ON g.submission_id = s.submission_id
+                AND s.status = 'returned'
+            WHERE cm.user_id = :userId
+            ORDER BY a.assignment_id
+            """, nativeQuery = true)
     List<LearnerHomeResponseDto> findRows(@Param("userId") String userId);
 
     /** Published assignments in the learner's cohort(s) that have no submission row for them yet (late joiners). */

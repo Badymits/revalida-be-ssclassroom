@@ -21,7 +21,6 @@ public enum ErrorCode {
     private final int status;
     private final String defaultMessage;
 
-    // Statuses without their own code (e.g. 405, 415) fall back to VALIDATION_ERROR or INTERNAL_ERROR.
     public static ErrorCode fromStatus(int status) {
         return Arrays.stream(values())
                 .filter(code -> code.status == status)

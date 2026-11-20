@@ -15,7 +15,6 @@ import org.ssglobal.revalida.ssclassroom.model.*;
 import org.ssglobal.revalida.ssclassroom.repository.IdempotencyKeyRepository;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionArtifactRepository;
 import org.ssglobal.revalida.ssclassroom.repository.SubmissionRepository;
-import org.ssglobal.revalida.ssclassroom.service.S3Bucket.S3Service;
 import org.ssglobal.revalida.ssclassroom.service.SubmissionService;
 
 import java.util.Optional;
@@ -34,8 +33,6 @@ class SubmissionServiceIdempotencyTest {
   private SubmissionArtifactRepository submissionArtifactRepository;
   @Mock
   private IdempotencyKeyRepository idempotencyKeyRepository;
-  @Mock
-  private S3Service s3Service;
 
   @InjectMocks
   private SubmissionService submissionService;
@@ -71,13 +68,12 @@ class SubmissionServiceIdempotencyTest {
     when(submissionRepository.findBySubmissionId(submissionId))
             .thenReturn(Optional.of(mockSubmission));
 
-    // Execute
     TurnInSubmissionResponseDto response = submissionService.turnInSubmission(
             submissionId, learnerId, idempotencyKey, requestDto
     );
 
     assertNotNull(response);
-    // Verify that the idempotency key was successfully registered/saved at the end
+
     verify(idempotencyKeyRepository, times(1)).save(any(IdempotencyKeyModel.class));
   }
 
@@ -94,11 +90,10 @@ class SubmissionServiceIdempotencyTest {
     compositeId.setSubmissionId(submissionId);
     existingRecord.setIdempotencyCompositeModel(compositeId);
 
-    // 1. Mock idempotency repository finding the key
+
     when(idempotencyKeyRepository.findByIdemKey(idempotencyKey))
             .thenReturn(Optional.of(existingRecord));
 
-    // 2. Mock submission and artifact lookups used during replay reconstruction
     when(submissionRepository.findBySubmissionId(submissionId))
             .thenReturn(Optional.of(mockSubmission));
 
@@ -107,7 +102,7 @@ class SubmissionServiceIdempotencyTest {
     when(submissionArtifactRepository.findBySubmissionId(submissionId))
             .thenReturn(Optional.of(mockArtifact));
 
-    // Execute: Should successfully return the cached response without throwing
+
     TurnInSubmissionResponseDto response = submissionService.turnInSubmission(
             submissionId, learnerId, idempotencyKey, requestDto
     );
@@ -121,7 +116,7 @@ class SubmissionServiceIdempotencyTest {
     String learnerId = "user_456";
     String idempotencyKey = "key_hijacked";
 
-    // This key belongs to a DIFFERENT user/submission
+    //  key belongs to a DIFFERENT submission
     IdempotencyKeyModel foreignRecord = new IdempotencyKeyModel();
 
     IdempotencyCompositeModel compositeId = new IdempotencyCompositeModel();
@@ -134,7 +129,7 @@ class SubmissionServiceIdempotencyTest {
     when(idempotencyKeyRepository.findByIdemKey(idempotencyKey))
             .thenReturn(Optional.of(foreignRecord));
 
-    // Execute & Assert: Should block cross-user/cross-submission key hijacking
+    //  Should block cross-user/cross-submission key hijacking
     assertThrows(
             StateInvalidException.class,
             () -> submissionService.turnInSubmission(submissionId, learnerId, idempotencyKey, requestDto)

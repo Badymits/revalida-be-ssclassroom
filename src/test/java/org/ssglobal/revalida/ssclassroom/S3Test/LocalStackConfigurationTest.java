@@ -137,14 +137,12 @@ public class LocalStackConfigurationTest {
   }
 
   @Test
-  @Disabled
   public void testGetObjectFromBucket() throws IOException, InterruptedException{
 
-    // the key here depends on the key generated with the method above
-    // as well as the key saved in the database
-    String s3Key = "sub/d0f44d50-124d-4462-a95e-dcef7ae654ea/DummyTxt1.txt";
+    // replace UUID with the actual UUID generated and placed inside bucket
+    String s3Key = "sub/54df4572-94d8-47c2-b8d0-152751e4d24c/DummyTxt1.txt";
 
-    // Step 1: Call your service method to generate the GET pre-signed URL DTO
+    // Call your service method to generate the GET pre-signed URL DTO
     PresignedS3UrlDto getUrlDto = s3Service.createPresignedGetUrl(txtBucketName, s3Key);
 
     assertNotNull(getUrlDto, "Presigned S3 URL DTO should not be null");
@@ -152,7 +150,6 @@ public class LocalStackConfigurationTest {
     assertNotNull(getUrlDto.getUploadUrl(), "URL string should not be null");
     assertEquals("GET", getUrlDto.getHttpMethod(), "HTTP method should be GET");
 
-    // Step 2: Use Java's HttpClient to test downloading the file using the generated GET URL
     HttpClient client = HttpClient.newHttpClient();
     HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(getUrlDto.getUploadUrl()))
@@ -161,7 +158,6 @@ public class LocalStackConfigurationTest {
 
     HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-    // Step 3: Assert that the request succeeded and returned the correct file contents
     assertEquals(200, response.statusCode(), "GET request to pre-signed URL should return 200 OK");
     assertFalse(response.body().isEmpty(), "Downloaded body should not be empty");
 
@@ -169,7 +165,6 @@ public class LocalStackConfigurationTest {
   }
 
   @Test
-  @Disabled
   public void testBucketNotFoundExceptionIsThrown() {
     String nonExistentBucket = "non-existent-bucket-xyz-123";
     String s3Key = "sub/d0f44d50-124d-4462-a95e-dcef7ae654ea/DummyTxt1.txt";
@@ -177,45 +172,10 @@ public class LocalStackConfigurationTest {
     // Verify that calling service method with an invalid bucket
     // throws the custom exception
     assertThrows(
-            BucketNotFoundException.class,
+            NoSuchBucketException.class,
             () -> s3Service.createPresignedGetUrl(nonExistentBucket, s3Key),
             "Expected createPresignedGetUrl to throw BucketNotFoundException"
     );
-  }
-
-  // will remove later
-  @Test
-  @Transactional
-  @Rollback(false)
-  public void seedTestAssignment() {
-    // 1. Fetch a valid cohort
-    CohortModel cohort = cohortRepository.findAll().stream()
-            .findFirst().orElseThrow();
-
-    String testAssignmentId = "asg_test01java";
-
-    // 2. Use native PostgreSQL upsert to bypass Hibernate state/version conflicts entirely
-    entityManager.createNativeQuery(
-                    "INSERT INTO assignment (assignment_id, cohort_id, title, instructions, points, status, submission_type) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?) " +
-                            "ON CONFLICT (assignment_id) DO UPDATE SET " +
-                            "cohort_id = EXCLUDED.cohort_id, " +
-                            "title = EXCLUDED.title, " +
-                            "instructions = EXCLUDED.instructions, " +
-                            "points = EXCLUDED.points, " +
-                            "status = EXCLUDED.status, " +
-                            "submission_type = EXCLUDED.submission_type")
-            .setParameter(1, testAssignmentId)
-            .setParameter(2, cohort.getCohortId()) // Adjust to match your CohortModel ID getter if needed
-            .setParameter(3, "Java Assignment: S3 Submission & Pre-Signed URL API")
-            .setParameter(4, "Due: Nov 23, 2026. Build a Spring Boot service for secure file uploads.")
-            .setParameter(5, 100)
-            .setParameter(6, AssignmentStatus.draft.name())
-            .setParameter(7, SubmissionType.file.name())
-            .executeUpdate();
-
-    entityManager.flush();
-    System.out.println(">>> Successfully seeded assignment with ID: " + testAssignmentId);
   }
 
 }

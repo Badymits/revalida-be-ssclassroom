@@ -77,7 +77,6 @@ public class MySecurityContext {
 
 						.anyRequest().authenticated())
 
-				// token instead of the reference projects' formLogin(): the API spec requires a Bearer JWT
 				.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(roleConverter()))
 						.authenticationEntryPoint(authenticationEntryPoint).accessDeniedHandler(accessDeniedHandler))
 
@@ -89,7 +88,6 @@ public class MySecurityContext {
 		return http.build();
 	}
 
-	// frontend origins come from app.cors.allowed-origins (comma separated); Bearer token, so no cookies
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource(
 			@Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
@@ -132,7 +130,6 @@ public class MySecurityContext {
 		return NimbusJwtDecoder.withSecretKey(secretKey(secret)).macAlgorithm(MacAlgorithm.HS256).build();
 	}
 
-	// the "role" claim ("learner" | "trainer") becomes ROLE_learner / ROLE_trainer
 	private JwtAuthenticationConverter roleConverter() {
 		JwtGrantedAuthoritiesConverter authorities = new JwtGrantedAuthoritiesConverter();
 		authorities.setAuthoritiesClaimName("role");

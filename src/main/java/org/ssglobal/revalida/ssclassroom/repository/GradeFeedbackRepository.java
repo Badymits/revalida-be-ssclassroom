@@ -10,16 +10,9 @@ import org.ssglobal.revalida.ssclassroom.dto.GradeFeedback.GradeFeedbackResponse
 import org.ssglobal.revalida.ssclassroom.model.CohortMemberId;
 import org.ssglobal.revalida.ssclassroom.model.CohortMemberModel;
 
-/**
- * Read-only L3 query over Dev 1-3 tables. The SQL lives here, on the repository method.
- *
- * One returned submission of one learner, with its assignment, grade and first artifact. The columns are in the
- * same order as GradeFeedbackResponseDto's canonical constructor, so Spring Data fills the record by position.
- */
 @Repository
 public interface GradeFeedbackRepository extends JpaRepository<CohortMemberModel, CohortMemberId> {
 
-    /** Empty unless the submission exists, belongs to userId and is returned (graded). */
     @Query(value = """
             SELECT
                 -- submission
@@ -38,10 +31,8 @@ public interface GradeFeedbackRepository extends JpaRepository<CohortMemberModel
                 g.private_comment                    AS private_comment,
                 g.returned_at                        AS returned_at,
 
-                -- grading trainer (full name, null when blank)
                 NULLIF(TRIM(CONCAT_WS(' ', t.first_name, t.last_name)), '') AS trainer_name,
 
-                -- first artifact (s3_key is swapped for a signed URL by the service)
                 sa.kind                              AS artifact_kind,
                 sa.name                              AS artifact_name,
                 sa.body                              AS artifact_body,

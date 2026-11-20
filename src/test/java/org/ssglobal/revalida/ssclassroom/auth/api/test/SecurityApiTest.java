@@ -54,10 +54,6 @@ import org.ssglobal.revalida.ssclassroom.service.GradeService;
 import org.ssglobal.revalida.ssclassroom.service.ReviewService;
 import org.ssglobal.revalida.ssclassroom.service.SubmissionService;
 
-/**
- * Loads the REAL MySecurityContext (JWT decoder, role mapping, URL rules, error handlers) with the controllers.
- * Only the services are mocked, so no database is needed.
- */
 @WebMvcTest(controllers = { AuthController.class, ContentController.class,
         ReviewController.class, SubmissionController.class })
 @Import({ MySecurityContext.class, RestAuthenticationEntryPoint.class, RestAccessDeniedHandler.class,
@@ -71,16 +67,13 @@ class SecurityApiTest {
     @Autowired JwtEncoder jwtEncoder;
 
     @MockitoBean AuthService authService;
-    @MockitoBean AppUserRepository appUserRepository; // used by the UserDetailsService bean
+    @MockitoBean AppUserRepository appUserRepository;
     @MockitoBean AssignmentService assignmentService;
     @MockitoBean GradeService gradeService;
     @MockitoBean ReviewService reviewService;
     @MockitoBean SubmissionService submissionService;
     @MockitoBean GradeDraftService gradeDraftService;
 
-    // ---------- helpers ----------
-
-    // same shape as AuthService's token: subject = usr_ id, "role" claim = learner | trainer
     private String bearer(String userId, Role role) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder().subject(userId).claim("role", role.name())
@@ -97,8 +90,6 @@ class SecurityApiTest {
              "role":"learner","cohortId":"crs_SEED_BACKEND_Q4"}""";
     private static final String REGISTER_TRAINER = """
             {"firstName":"Tom","lastName":"Trainer","username":"tom","password":"Password123!","role":"trainer"}""";
-
-    // ---------- 401 Unauthorized ----------
 
     @Test
     void me_withoutToken_returns401WithErrorEnvelope() throws Exception {
@@ -145,8 +136,6 @@ class SecurityApiTest {
         mvc.perform(get("/api/v1/assignments/a-1")).andExpect(status().isUnauthorized());
     }
 
-    // ---------- GET /me ----------
-
     @Test
     void me_asLearner_returnsProfileOfTokenSubject() throws Exception {
         when(authService.me("usr_L1"))
@@ -173,18 +162,14 @@ class SecurityApiTest {
                 .andExpect(jsonPath("$.cohortIds").isEmpty());
     }
 
-    // ---------- role authority mapping ----------
-
     @Test
     void roleClaim_mapsToRoleAuthority_soEachRoleOnlyReachesItsOwnRoutes() throws Exception {
-        // "trainer" claim -> ROLE_trainer: reaches the trainer route, not the learner route
         mvc.perform(patch("/api/v1/assignments/a-1").header("Authorization", trainerToken())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"x\"}"))
                 .andExpect(status().isOk());
         mvc.perform(post("/api/v1/submissions/s-1/unsubmit").header("Authorization", trainerToken()))
                 .andExpect(status().isForbidden());
 
-        // "learner" claim -> ROLE_learner: the other way round
         mvc.perform(patch("/api/v1/assignments/a-1").header("Authorization", learnerToken())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"title\":\"x\"}"))
                 .andExpect(status().isForbidden());
@@ -192,8 +177,6 @@ class SecurityApiTest {
                         .header("Authorization", learnerToken())).andReturn();
         assertThat(learnerRoute.getResponse().getStatus()).isNotIn(401, 403);
     }
-
-    // ---------- 403 Forbidden / role rules ----------
 
     @Test
     void trainerOnlyRoutes_forLearner_return403WithErrorEnvelope() throws Exception {
@@ -266,13 +249,10 @@ class SecurityApiTest {
 
     @Test
     void csrfIsNotRequired_forTokenAuthenticatedPosts() throws Exception {
-        // a POST without a CSRF token must not be rejected with 403 for a legitimate trainer call
         mvc.perform(post("/api/v1/assignments/a-1/publish").header("Authorization", trainerToken())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"cohortId\":\"crs_1\"}"))
                 .andExpect(status().isOk());
     }
-
-    // ---------- public endpoints ----------
 
     @Test
     void login_isPublic() throws Exception {
@@ -310,8 +290,6 @@ class SecurityApiTest {
     void checkConnection_isPublic() throws Exception {
         mvc.perform(get("/api/v1/check-connection")).andExpect(status().isOk());
     }
-
-    // ---------- registration over HTTP ----------
 
     @Test
     void registerLearner_returns201() throws Exception {

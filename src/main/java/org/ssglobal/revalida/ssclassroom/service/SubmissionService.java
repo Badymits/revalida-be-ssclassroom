@@ -1,6 +1,5 @@
 package org.ssglobal.revalida.ssclassroom.service;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,8 +43,6 @@ public class SubmissionService {
   private final GradeDraftRepository gradeDraftRepository;
 
   private final S3Service s3Service;
-
-  private final Long MAX_FILE_SIZE = 10485760L;
 
   @Transactional(readOnly = true)
   public SubmissionDetailDto fetchSubmissionBySubmissionId(String submissionId, String learnerId){
@@ -163,12 +160,13 @@ public class SubmissionService {
           if (!id.getUserId().equals(learnerId) || !id.getSubmissionId().equals(submissionId)) {
             throw new StateInvalidException("This Idempotency-Key was already used for another request");
           }
-          // If a previous request already finished the entire turn-in, stop them from generating new URLs
+          // If a previous request already finished the entire turn-in, stop users from generating new URLs
           throw new StateInvalidException("Submission has already been turned in with this Idempotency-Key");
       });
     }
 
 
+    Long MAX_FILE_SIZE = 10485760L;
     if (submissionRequestDto.getSizeBytes() > MAX_FILE_SIZE){
       log.error("File size is too large! Submitted file size: {} MB",
               submissionRequestDto.getSizeBytes() / (1024.0 * 1024.0));
@@ -229,7 +227,7 @@ public class SubmissionService {
     artifactModel.setKind(submissionRequestDto.getKind());
 
     // Need to set url of link submissions for the artifact since
-    // flyway check constraint requires the drive url to be saved
+    // Flyway check constraint requires the drive url to be saved
     if (submissionRequestDto.getKind().equals(SubmissionType.link)){
       artifactModel.setUrl(submissionRequestDto.getDriveUrl());
     }
@@ -270,10 +268,7 @@ public class SubmissionService {
     }
 
     SubmissionModel submission = submissionRepository.findBySubmissionId(submissionId)
-      .orElseThrow(() -> {
-        log.error("Submission not found with ID {}", submissionId);
-        return NotFoundException.of("Submission", submissionId);
-      });
+      .orElseThrow(() -> NotFoundException.of("Submission", submissionId));
 
     if (submission.getStatus().equals(Status.returned)){
       log.error("Cannot update a graded/returned submission!");
@@ -380,8 +375,8 @@ public class SubmissionService {
 
   }
 
-  private SubmissionArtifactModel resolveOrCreateArtifact(String submissionId,
-                                                          TurnInSubmissionRequestDto dto) {
+  private SubmissionArtifactModel resolveOrCreateArtifact(
+          String submissionId, TurnInSubmissionRequestDto dto) {
 
     Optional<SubmissionArtifactModel> existingArtifact =
             submissionArtifactRepository.findBySubmissionId(submissionId);
@@ -518,8 +513,7 @@ public class SubmissionService {
     unsubmitDto.setSubmissionId(submissionId);
     unsubmitDto.setStatus(status);
     unsubmitDto.setSubmittedAt(
-            LocalDateTime.now()
-    );
+            LocalDateTime.now());
 
     log.info("Unsubmit DTO generated!");
 
@@ -557,10 +551,7 @@ public class SubmissionService {
 
   private void validateLearnerOwnership(SubmissionModel submission, String learnerId) {
     log.info("Validating Submission ownership....");
-    log.info("Submission learner id: {} and logged in user: {}",
-            submission.getSubmissionCompositeId().getLearnerId(),
-            learnerId
-    );
+
     if (!submission.getSubmissionCompositeId().getLearnerId().equals(learnerId)){
       log.error("User with Id: {} does not match submission owner: {}",
               submission.getSubmissionCompositeId().getLearnerId(),

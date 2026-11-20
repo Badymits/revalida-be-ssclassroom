@@ -26,7 +26,7 @@ public class GoogleDriveService {
 
   private final Drive driveService;
 
-  public static record DownloadedFile(
+  public record DownloadedFile(
     InputStream inputStream,
     Long contentLength,
     String contentType,
@@ -129,7 +129,7 @@ public class GoogleDriveService {
               "fileid doesnt exist!");
     }
 
-    Path tempFile = null;
+    Path tempFile;
     try {
       File metadata = driveService.files().get(fileId).setFields("name, mimeType").execute();
       String rawName = metadata != null && metadata.getName() != null ? metadata.getName() : "document";

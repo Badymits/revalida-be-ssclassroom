@@ -3,13 +3,11 @@ package org.ssglobal.revalida.ssclassroom.gdrive.test;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.ssglobal.revalida.ssclassroom.dto.UploadSubmission.UploadSubmissionRequestDto;
 import org.ssglobal.revalida.ssclassroom.service.GoogleDrive.GoogleDriveService;
 
 import java.io.InputStream;
@@ -31,8 +29,10 @@ public class GoogleDriveIntegrationTest {
   @Autowired
   private Drive drive;
 
-  private final String fileUrl = "https://drive.google.com/file/d/1Pw-WI6oEWPN4PcOefSNvMKjLSse2KRRx/view?usp=sharing";
-  private final String folderUrl = "https://drive.google.com/drive/folders/1FIMpLEjP2b9hUcJ5MyKlMRyrsGfTjZoM?usp=drive_link";
+  private final String fileUrl =
+          "https://drive.google.com/file/d/1Pw-WI6oEWPN4PcOefSNvMKjLSse2KRRx/view?usp=sharing";
+  private final String folderUrl =
+          "https://drive.google.com/drive/folders/1FIMpLEjP2b9hUcJ5MyKlMRyrsGfTjZoM?usp=drive_link";
 
 
   @Test
@@ -55,7 +55,7 @@ public class GoogleDriveIntegrationTest {
     File dto = googleDriveService.extractFile(fileUrl);
     log.info(dto.toString());
     try (InputStream in = drive.files().get(fileId).executeMediaAsInputStream()) {
-      assertEquals(dto.getSize(), (long) in.readAllBytes().length);
+      assertEquals(dto.getSize(), in.readAllBytes().length);
     }
   }
 
@@ -93,7 +93,7 @@ public class GoogleDriveIntegrationTest {
             .orElseThrow();
 
     try (InputStream in = drive.files().get(picked.getId()).executeMediaAsInputStream()) {
-      assertEquals(dto.getSize(), (long) in.readAllBytes().length);
+      assertEquals(dto.getSize(), in.readAllBytes().length);
     }
   }
 

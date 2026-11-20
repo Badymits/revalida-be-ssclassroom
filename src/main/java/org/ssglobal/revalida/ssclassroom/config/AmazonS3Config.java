@@ -71,7 +71,7 @@ public class AmazonS3Config {
 
                     /*
                     // LocalStack relies heavily on path-style access.
-                    // Enabling this ensures SDK talks directly to localstack
+                    // Enabling this ensures SDK talks directly to LocalStack
                     // using simple port routing without failing DNS resolution
 
                      */
